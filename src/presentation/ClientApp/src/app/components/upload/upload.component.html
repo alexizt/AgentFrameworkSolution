@@ -33,7 +33,7 @@
           <select
             id="modelSelect"
             class="w-full appearance-none rounded-xl border border-white/10 bg-slate-900/80 px-4 py-2.5 pr-10 text-sm text-white outline-none transition-colors focus:border-indigo-400/70"
-            [disabled]="isLoading || isLoadingModels()"
+            [disabled]="isLoading() || isLoadingModels()"
             [value]="selectedModel()"
             (change)="onModelSelected($event)">
             @if (isLoadingModels()) {
@@ -104,9 +104,9 @@
             <div class="flex gap-3 mt-4">
               <button
                 (click)="analyzeImage()"
-                [disabled]="isLoading || !selectedModel()"
+                [disabled]="isLoading() || !selectedModel()"
                 class="analyze-btn flex-1 flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-indigo-500 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:from-indigo-400 hover:to-violet-500 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100">
-                @if (isLoading) {
+                @if (isLoading()) {
                   <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -122,7 +122,7 @@
 
               <button
                 (click)="clearSelection()"
-                [disabled]="isLoading"
+                [disabled]="isLoading()"
                 class="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-400 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed">
                 Clear
               </button>
@@ -134,7 +134,7 @@
     </div>
 
     <!-- Error Banner -->
-    @if (hasError) {
+    @if (hasError()) {
       <div class="mb-6 flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300 backdrop-blur-sm">
         <svg class="mt-0.5 h-4 w-4 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
@@ -144,7 +144,7 @@
     }
 
     <!-- Results -->
-    @if (hasResult && result()) {
+    @if (hasResult() && result()) {
       <app-result-card [result]="result()!" />
     }
 

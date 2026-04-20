@@ -1,10 +1,7 @@
 import { Component, signal, inject, ElementRef, viewChild, OnInit } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { ImageAnalysisService } from '../../services/image-analysis.service';
-import { AnalysisResult } from '../../models/analysis-result.model';
 import { ResultCardComponent } from '../result-card/result-card.component';
-
-type AnalysisState = 'idle' | 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-upload',
@@ -17,19 +14,20 @@ export class UploadComponent implements OnInit {
   private readonly analysisService = inject(ImageAnalysisService);
   readonly fileInput = viewChild.required<ElementRef<HTMLInputElement>>('fileInput');
 
+  readonly state = this.analysisService.state;
+  readonly result = this.analysisService.result;
+  readonly errorMessage = this.analysisService.errorMessage;
+  readonly isLoading = this.analysisService.isLoading;
+  readonly hasResult = this.analysisService.hasResult;
+  readonly hasError = this.analysisService.hasError;
+
   availableModels = signal<string[]>([]);
   selectedModel = signal('gemma4:e4b');
   isLoadingModels = signal(true);
   isDragging = signal(false);
   selectedFile = signal<File | null>(null);
   previewUrl = signal<string | null>(null);
-  state = signal<AnalysisState>('idle');
-  result = signal<AnalysisResult | null>(null);
-  errorMessage = signal<string | null>(null);
 
-  get isLoading(): boolean { return this.state() === 'loading'; }
-  get hasResult(): boolean { return this.state() === 'success'; }
-  get hasError(): boolean { return this.state() === 'error'; }
   get hasVisionModels(): boolean { return this.availableModels().length > 0; }
 
   ngOnInit(): void {
@@ -83,9 +81,7 @@ export class UploadComponent implements OnInit {
   clearSelection(): void {
     this.selectedFile.set(null);
     this.previewUrl.set(null);
-    this.result.set(null);
-    this.errorMessage.set(null);
-    this.state.set('idle');
+    this.analysisService.clearAnalysis();
     this.fileInput().nativeElement.value = '';
   }
 
@@ -101,21 +97,7 @@ export class UploadComponent implements OnInit {
     const file = this.selectedFile();
     if (!file || !this.selectedModel()) return;
 
-    this.state.set('loading');
-    this.errorMessage.set(null);
-    this.result.set(null);
-
-    this.analysisService.analyzeImage(file, this.selectedModel()).subscribe({
-      next: (data) => {
-        this.result.set(data);
-        this.state.set('success');
-      },
-      error: (err) => {
-        const msg = err?.error?.error ?? 'Analysis failed. Please try again.';
-        this.errorMessage.set(msg);
-        this.state.set('error');
-      }
-    });
+    this.analysisService.analyzeImage(file, this.selectedModel());
   }
 
   formatFileSize(bytes: number): string {
@@ -126,9 +108,7 @@ export class UploadComponent implements OnInit {
 
   private selectFile(file: File): void {
     this.selectedFile.set(file);
-    this.result.set(null);
-    this.errorMessage.set(null);
-    this.state.set('idle');
+    this.analysisService.clearAnalysis();
 
     const reader = new FileReader();
     reader.onload = (e) => this.previewUrl.set(e.target?.result as string);
