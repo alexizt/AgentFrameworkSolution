@@ -12,7 +12,7 @@ export class ImageAnalysisService {
   private readonly resultSignal = signal<AnalysisResult | null>(null);
   private readonly errorMessageSignal = signal<string | null>(null);
   private readonly availableModelsSignal = signal<string[]>([]);
-  private readonly selectedModelSignal = signal('gemma4:e4b');
+  private readonly selectedModelSignal = signal('');
   private readonly isLoadingModelsSignal = signal(true);
 
   readonly state = this.stateSignal.asReadonly();
