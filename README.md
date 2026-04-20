@@ -46,6 +46,20 @@ ollama list
 
 Two terminals are required — one for the backend API, one for the Angular dev server.
 
+### Quick start (PowerShell)
+
+From the repository root, you can launch backend and frontend in separate PowerShell windows:
+
+```powershell
+.\start-dev.ps1
+```
+
+To also open the browser for the frontend dev server:
+
+```powershell
+.\start-dev.ps1 -OpenFrontend
+```
+
 ### Terminal 1 — Backend (ASP.NET Core)
 
 ```bash
