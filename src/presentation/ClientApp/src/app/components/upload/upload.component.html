@@ -38,7 +38,7 @@
             (change)="onModelSelected($event)">
             @if (isLoadingModels()) {
               <option value="" disabled>Loading models...</option>
-            } @else if (!hasVisionModels) {
+            } @else if (!hasVisionModels()) {
               <option value="" disabled>No vision models available</option>
             } @else {
               @for (model of availableModels(); track model) {

@@ -17,38 +17,20 @@ export class UploadComponent implements OnInit {
   readonly state = this.analysisService.state;
   readonly result = this.analysisService.result;
   readonly errorMessage = this.analysisService.errorMessage;
+  readonly availableModels = this.analysisService.availableModels;
+  readonly selectedModel = this.analysisService.selectedModel;
+  readonly isLoadingModels = this.analysisService.isLoadingModels;
   readonly isLoading = this.analysisService.isLoading;
   readonly hasResult = this.analysisService.hasResult;
   readonly hasError = this.analysisService.hasError;
+  readonly hasVisionModels = this.analysisService.hasVisionModels;
 
-  availableModels = signal<string[]>([]);
-  selectedModel = signal('gemma4:e4b');
-  isLoadingModels = signal(true);
   isDragging = signal(false);
   selectedFile = signal<File | null>(null);
   previewUrl = signal<string | null>(null);
 
-  get hasVisionModels(): boolean { return this.availableModels().length > 0; }
-
   ngOnInit(): void {
-    this.analysisService.getAvailableModels().subscribe({
-      next: (models) => {
-        const uniqueModels = [...new Set(models)].filter((x) => !!x?.trim());
-        if (uniqueModels.length > 0) {
-          this.availableModels.set(uniqueModels);
-          this.selectedModel.set(uniqueModels[0]);
-        } else {
-          this.availableModels.set([]);
-          this.selectedModel.set('');
-        }
-        this.isLoadingModels.set(false);
-      },
-      error: () => {
-        this.availableModels.set([]);
-        this.selectedModel.set('');
-        this.isLoadingModels.set(false);
-      }
-    });
+    this.analysisService.loadAvailableModels();
   }
 
   onDragOver(event: DragEvent): void {
@@ -87,10 +69,7 @@ export class UploadComponent implements OnInit {
 
   onModelSelected(event: Event): void {
     const select = event.target as HTMLSelectElement;
-    const model = select.value?.trim();
-    if (model) {
-      this.selectedModel.set(model);
-    }
+    this.analysisService.selectModel(select.value ?? '');
   }
 
   analyzeImage(): void {
