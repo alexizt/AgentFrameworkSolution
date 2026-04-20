@@ -6,6 +6,7 @@ using AgentFrameworkSolution.Application.Interfaces;
 using AgentFrameworkSolution.Domain.ValueObjects;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace AgentFrameworkSolution.Infrastructure.Services;
 
@@ -19,6 +20,7 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
 
     private readonly HttpClient _httpClient;
     private readonly string _model;
+    private readonly double _temperature;
     private readonly ILogger<OllamaImageAnalyzer> _logger;
 
     public OllamaImageAnalyzer(
@@ -28,6 +30,7 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
     {
         _httpClient = httpClient;
         _model = configuration["Ollama:Model"] ?? "gemma4:e4b";
+        _temperature = ParseTemperature(configuration["Ollama:Temperature"]);
         _logger = logger;
     }
 
@@ -42,6 +45,7 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
         {
             Model = _model,
             Stream = false,
+            Options = new OllamaChatOptions { Temperature = _temperature },
             Messages =
             [
                 new OllamaMessage
@@ -64,7 +68,10 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
         var json = JsonSerializer.Serialize(requestBody, JsonOptions);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        _logger.LogInformation("Sending image analysis request to Ollama (model: {Model})", _model);
+        _logger.LogInformation(
+            "Sending image analysis request to Ollama (model: {Model}, temperature: {Temperature})",
+            _model,
+            _temperature);
 
         var response = await _httpClient.PostAsync("/api/chat", content, cancellationToken);
 
@@ -125,13 +132,33 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
         return trimmed;
     }
 
+    private static double ParseTemperature(string? rawTemperature)
+    {
+        const double defaultTemperature = 0.2;
+
+        if (string.IsNullOrWhiteSpace(rawTemperature))
+            return defaultTemperature;
+
+        if (!double.TryParse(rawTemperature, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+            return defaultTemperature;
+
+        // Keep a safe range for model sampling behavior.
+        return Math.Clamp(parsed, 0.0, 2.0);
+    }
+
     // ── Private DTOs (infrastructure-internal) ──────────────────────────────
 
     private sealed class OllamaChatRequest
     {
         [JsonPropertyName("model")] public string Model { get; init; } = string.Empty;
         [JsonPropertyName("stream")] public bool Stream { get; init; }
+        [JsonPropertyName("options")] public OllamaChatOptions? Options { get; init; }
         [JsonPropertyName("messages")] public OllamaMessage[] Messages { get; init; } = [];
+    }
+
+    private sealed class OllamaChatOptions
+    {
+        [JsonPropertyName("temperature")] public double Temperature { get; init; }
     }
 
     private sealed class OllamaMessage
