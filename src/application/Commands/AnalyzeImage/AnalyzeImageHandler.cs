@@ -34,6 +34,7 @@ public sealed class AnalyzeImageHandler : IRequestHandler<AnalyzeImageCommand, I
         var result = await _imageAnalyzer.AnalyzeAsync(
             request.ImageData,
             request.ContentType,
+            request.Model,
             cancellationToken);
 
         if (string.IsNullOrWhiteSpace(result.Summary))

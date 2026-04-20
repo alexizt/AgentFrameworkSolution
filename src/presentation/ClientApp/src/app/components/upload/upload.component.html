@@ -14,7 +14,7 @@
     <header class="text-center mb-12">
       <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-indigo-300 backdrop-blur-sm mb-6">
         <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        Ollama · gemma4:e4b
+        Ollama · {{ selectedModel() }}
       </div>
       <h1 class="text-5xl font-extrabold tracking-tight bg-linear-to-r from-white via-indigo-200 to-violet-300 bg-clip-text text-transparent mb-3">
         Vision Analyzer
@@ -26,6 +26,27 @@
 
     <!-- Upload Card -->
     <div class="glass-card rounded-2xl p-6 mb-6">
+
+      <div class="mb-5">
+        <label for="modelSelect" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">Model</label>
+        <div class="relative">
+          <select
+            id="modelSelect"
+            class="w-full appearance-none rounded-xl border border-white/10 bg-slate-900/80 px-4 py-2.5 pr-10 text-sm text-white outline-none transition-colors focus:border-indigo-400/70"
+            [disabled]="isLoading || isLoadingModels()"
+            [value]="selectedModel()"
+            (change)="onModelSelected($event)">
+            @if (isLoadingModels()) {
+              <option value="" disabled>Loading models...</option>
+            } @else {
+              @for (model of availableModels(); track model) {
+                <option [value]="model">{{ model }}</option>
+              }
+            }
+          </select>
+          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400" aria-hidden="true">▾</span>
+        </div>
+      </div>
 
       @if (!selectedFile()) {
         <!-- Drop Zone -->

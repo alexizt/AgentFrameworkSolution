@@ -1,4 +1,4 @@
-import { Component, signal, inject, ElementRef, viewChild } from '@angular/core';
+import { Component, signal, inject, ElementRef, viewChild, OnInit } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { ImageAnalysisService } from '../../services/image-analysis.service';
 import { AnalysisResult } from '../../models/analysis-result.model';
@@ -13,10 +13,13 @@ type AnalysisState = 'idle' | 'loading' | 'success' | 'error';
   templateUrl: './upload.component.html',
   styleUrl: './upload.component.css'
 })
-export class UploadComponent {
+export class UploadComponent implements OnInit {
   private readonly analysisService = inject(ImageAnalysisService);
   readonly fileInput = viewChild.required<ElementRef<HTMLInputElement>>('fileInput');
 
+  availableModels = signal<string[]>([]);
+  selectedModel = signal('gemma4:e4b');
+  isLoadingModels = signal(true);
   isDragging = signal(false);
   selectedFile = signal<File | null>(null);
   previewUrl = signal<string | null>(null);
@@ -27,6 +30,25 @@ export class UploadComponent {
   get isLoading(): boolean { return this.state() === 'loading'; }
   get hasResult(): boolean { return this.state() === 'success'; }
   get hasError(): boolean { return this.state() === 'error'; }
+
+  ngOnInit(): void {
+    this.analysisService.getAvailableModels().subscribe({
+      next: (models) => {
+        const uniqueModels = [...new Set(models)].filter((x) => !!x?.trim());
+        if (uniqueModels.length > 0) {
+          this.availableModels.set(uniqueModels);
+          this.selectedModel.set(uniqueModels[0]);
+        } else {
+          this.availableModels.set([this.selectedModel()]);
+        }
+        this.isLoadingModels.set(false);
+      },
+      error: () => {
+        this.availableModels.set([this.selectedModel()]);
+        this.isLoadingModels.set(false);
+      }
+    });
+  }
 
   onDragOver(event: DragEvent): void {
     event.preventDefault();
@@ -64,6 +86,14 @@ export class UploadComponent {
     this.fileInput().nativeElement.value = '';
   }
 
+  onModelSelected(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const model = select.value?.trim();
+    if (model) {
+      this.selectedModel.set(model);
+    }
+  }
+
   analyzeImage(): void {
     const file = this.selectedFile();
     if (!file) return;
@@ -72,7 +102,7 @@ export class UploadComponent {
     this.errorMessage.set(null);
     this.result.set(null);
 
-    this.analysisService.analyzeImage(file).subscribe({
+    this.analysisService.analyzeImage(file, this.selectedModel()).subscribe({
       next: (data) => {
         this.result.set(data);
         this.state.set('success');

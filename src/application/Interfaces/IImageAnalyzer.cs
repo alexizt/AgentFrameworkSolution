@@ -7,5 +7,9 @@ public interface IImageAnalyzer
     Task<ImageAnalysisResult> AnalyzeAsync(
         byte[] imageData,
         string contentType,
+        string? model = null,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<string>> GetAvailableModelsAsync(
         CancellationToken cancellationToken = default);
 }

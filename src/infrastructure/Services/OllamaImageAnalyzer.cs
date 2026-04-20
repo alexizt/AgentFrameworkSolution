@@ -37,13 +37,15 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
     public async Task<ImageAnalysisResult> AnalyzeAsync(
         byte[] imageData,
         string contentType,
+        string? model = null,
         CancellationToken cancellationToken = default)
     {
         var base64Image = Convert.ToBase64String(imageData);
+        var effectiveModel = string.IsNullOrWhiteSpace(model) ? _model : model.Trim();
 
         var requestBody = new OllamaChatRequest
         {
-            Model = _model,
+            Model = effectiveModel,
             Stream = false,
             Options = new OllamaChatOptions { Temperature = _temperature },
             Messages =
@@ -70,7 +72,7 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
 
         _logger.LogInformation(
             "Sending image analysis request to Ollama (model: {Model}, temperature: {Temperature})",
-            _model,
+            effectiveModel,
             _temperature);
 
         var response = await _httpClient.PostAsync("/api/chat", content, cancellationToken);
@@ -90,6 +92,29 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
             throw new AnalysisFailedError("Ollama returned an empty response.");
 
         return ParseAnalysisResponse(rawContent);
+    }
+
+    public async Task<IReadOnlyList<string>> GetAvailableModelsAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync("/api/tags", cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("Ollama models lookup returned {StatusCode}: {Body}", response.StatusCode, errorBody);
+            throw new AnalysisFailedError($"Ollama service returned {(int)response.StatusCode} while fetching models.");
+        }
+
+        var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
+        var modelsResponse = JsonSerializer.Deserialize<OllamaModelsResponse>(responseJson, JsonOptions);
+
+        return modelsResponse?.Models?
+            .Where(x => !string.IsNullOrWhiteSpace(x.Name))
+            .Select(x => x.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToArray()
+            ?? [];
     }
 
     private ImageAnalysisResult ParseAnalysisResponse(string rawContent)
@@ -178,5 +203,15 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
         [JsonPropertyName("summary")] public string? Summary { get; init; }
         [JsonPropertyName("insights")] public List<string>? Insights { get; init; }
         [JsonPropertyName("tags")] public List<string>? Tags { get; init; }
+    }
+
+    private sealed class OllamaModelsResponse
+    {
+        [JsonPropertyName("models")] public List<OllamaModelItem>? Models { get; init; }
+    }
+
+    private sealed class OllamaModelItem
+    {
+        [JsonPropertyName("name")] public string Name { get; init; } = string.Empty;
     }
 }

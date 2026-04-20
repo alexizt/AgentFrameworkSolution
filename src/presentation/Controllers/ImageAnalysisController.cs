@@ -1,5 +1,6 @@
 using AgentFrameworkSolution.Application.Commands.AnalyzeImage;
 using AgentFrameworkSolution.Application.Errors;
+using AgentFrameworkSolution.Application.Interfaces;
 using AgentFrameworkSolution.Domain.Errors;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +17,29 @@ public sealed class ImageAnalysisController : ControllerBase
     private const long MaxFileSizeBytes = 10L * 1024 * 1024; // 10 MB
 
     private readonly IMediator _mediator;
+    private readonly IImageAnalyzer _imageAnalyzer;
 
-    public ImageAnalysisController(IMediator mediator)
+    public ImageAnalysisController(IMediator mediator, IImageAnalyzer imageAnalyzer)
     {
         _mediator = mediator;
+        _imageAnalyzer = imageAnalyzer;
+    }
+
+    /// <summary>Returns the available Ollama model names configured in the local Ollama instance.</summary>
+    [HttpGet("models")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetModels(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var models = await _imageAnalyzer.GetAvailableModelsAsync(cancellationToken);
+            return Ok(models);
+        }
+        catch (ApplicationError ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message, code = ex.Code });
+        }
     }
 
     /// <summary>Analyzes an uploaded image using the configured Ollama vision model.</summary>
@@ -31,6 +51,7 @@ public sealed class ImageAnalysisController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Analyze(
         IFormFile? file,
+        [FromForm] string? model,
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
@@ -48,7 +69,8 @@ public sealed class ImageAnalysisController : ControllerBase
         var command = new AnalyzeImageCommand(
             ImageData: memoryStream.ToArray(),
             FileName: file.FileName,
-            ContentType: file.ContentType);
+            ContentType: file.ContentType,
+            Model: model);
 
         try
         {
