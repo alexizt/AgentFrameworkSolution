@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { retry, timer } from 'rxjs';
 import { AnalysisResult } from '../models/analysis-result.model';
 
 export type AnalysisState = 'idle' | 'loading' | 'success' | 'error';
@@ -7,6 +8,8 @@ export type AnalysisState = 'idle' | 'loading' | 'success' | 'error';
 @Injectable({ providedIn: 'root' })
 export class ImageAnalysisService {
   private readonly http = inject(HttpClient);
+  private readonly modelsLoadRetryCount = 8;
+  private readonly modelsLoadRetryBaseDelayMs = 750;
 
   private readonly stateSignal = signal<AnalysisState>('idle');
   private readonly resultSignal = signal<AnalysisResult | null>(null);
@@ -29,25 +32,44 @@ export class ImageAnalysisService {
   loadAvailableModels(): void {
     this.isLoadingModelsSignal.set(true);
 
-    this.http.get<string[]>('/api/imageanalysis/models').subscribe({
-      next: (models) => {
-        const uniqueModels = [...new Set(models)].filter((x) => !!x?.trim());
-        if (uniqueModels.length > 0) {
-          this.availableModelsSignal.set(uniqueModels);
-          this.selectedModelSignal.set(uniqueModels[0]);
-        } else {
+    this.http
+      .get<string[]>('/api/imageanalysis/models')
+      .pipe(
+        retry({
+          count: this.modelsLoadRetryCount,
+          delay: (error, retryCount) => {
+            if (!this.shouldRetryLoadingModels(error)) {
+              throw error;
+            }
+
+            return timer(this.modelsLoadRetryBaseDelayMs * retryCount);
+          }
+        })
+      )
+      .subscribe({
+        next: (models) => {
+          const uniqueModels = [...new Set(models)].filter((x) => !!x?.trim());
+          if (uniqueModels.length > 0) {
+            this.availableModelsSignal.set(uniqueModels);
+            this.selectedModelSignal.set(uniqueModels[0]);
+          } else {
+            this.availableModelsSignal.set([]);
+            this.selectedModelSignal.set('');
+          }
+
+          this.isLoadingModelsSignal.set(false);
+        },
+        error: () => {
           this.availableModelsSignal.set([]);
           this.selectedModelSignal.set('');
+          this.isLoadingModelsSignal.set(false);
         }
+      });
+  }
 
-        this.isLoadingModelsSignal.set(false);
-      },
-      error: () => {
-        this.availableModelsSignal.set([]);
-        this.selectedModelSignal.set('');
-        this.isLoadingModelsSignal.set(false);
-      }
-    });
+  private shouldRetryLoadingModels(error: unknown): boolean {
+    const status = (error as { status?: number })?.status;
+    return status === 0 || (typeof status === 'number' && status >= 500);
   }
 
   selectModel(model: string): void {
