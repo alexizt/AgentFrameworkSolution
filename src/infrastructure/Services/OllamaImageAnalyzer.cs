@@ -39,10 +39,24 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
         byte[] imageData,
         string contentType,
         string? model = null,
+        SupportedLanguage? language = null,
         CancellationToken cancellationToken = default)
     {
         var base64Image = Convert.ToBase64String(imageData);
         var effectiveModel = string.IsNullOrWhiteSpace(model) ? _model : model.Trim();
+        var effectiveLanguage = language ?? SupportedLanguage.English;
+        var languageName = effectiveLanguage.GetLanguageName();
+
+        var promptContent = $$"""
+            Analyze this image carefully and return a JSON object with exactly these fields:
+            {
+              "summary": "2-3 sentence description of what you see",
+              "insights": ["insight 1", "insight 2", "insight 3"],
+              "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+            }
+            Return only valid JSON. No markdown, no code blocks, no extra text.
+            Respond in {{languageName}}.
+            """;
 
         var requestBody = new OllamaChatRequest
         {
@@ -54,15 +68,7 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
                 new OllamaMessage
                 {
                     Role = "user",
-                    Content = """
-                        Analyze this image carefully and return a JSON object with exactly these fields:
-                        {
-                          "summary": "2-3 sentence description of what you see",
-                          "insights": ["insight 1", "insight 2", "insight 3"],
-                          "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
-                        }
-                        Return only valid JSON. No markdown, no code blocks, no extra text.
-                        """,
+                    Content = promptContent,
                     Images = [base64Image]
                 }
             ]
@@ -72,8 +78,9 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         _logger.LogInformation(
-            "Sending image analysis request to Ollama (model: {Model}, temperature: {Temperature})",
+            "Sending image analysis request to Ollama (model: {Model}, language: {Language}, temperature: {Temperature})",
             effectiveModel,
+            languageName,
             _temperature);
 
         var response = await _httpClient.PostAsync("/api/chat", content, cancellationToken);
@@ -92,7 +99,7 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
         if (string.IsNullOrWhiteSpace(rawContent))
             throw new AnalysisFailedError("Ollama returned an empty response.");
 
-        return ParseAnalysisResponse(rawContent);
+        return ParseAnalysisResponse(rawContent, effectiveLanguage);
     }
 
     public async Task<IReadOnlyList<string>> GetAvailableModelsAsync(CancellationToken cancellationToken = default)
@@ -183,7 +190,7 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
         return hasClipModelInfo;
     }
 
-    private ImageAnalysisResult ParseAnalysisResponse(string rawContent)
+    private ImageAnalysisResult ParseAnalysisResponse(string rawContent, SupportedLanguage language)
     {
         var json = ExtractJson(rawContent);
         try
@@ -192,12 +199,13 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
             return new ImageAnalysisResult(
                 Summary: parsed?.Summary ?? rawContent,
                 Insights: parsed?.Insights ?? [],
-                Tags: parsed?.Tags ?? []);
+                Tags: parsed?.Tags ?? [],
+                Language: language);
         }
         catch (JsonException ex)
         {
             _logger.LogWarning(ex, "Could not parse JSON from Ollama response; using raw text as summary.");
-            return new ImageAnalysisResult(rawContent, [], []);
+            return new ImageAnalysisResult(rawContent, [], [], language);
         }
     }
 

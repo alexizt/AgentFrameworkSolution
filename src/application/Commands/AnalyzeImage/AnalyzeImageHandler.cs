@@ -2,6 +2,7 @@ using AgentFrameworkSolution.Application.DTOs;
 using AgentFrameworkSolution.Application.Errors;
 using AgentFrameworkSolution.Application.Interfaces;
 using AgentFrameworkSolution.Domain.Errors;
+using AgentFrameworkSolution.Domain.ValueObjects;
 using MediatR;
 
 namespace AgentFrameworkSolution.Application.Commands.AnalyzeImage;
@@ -31,10 +32,13 @@ public sealed class AnalyzeImageHandler : IRequestHandler<AnalyzeImageCommand, I
         if (!SupportedContentTypes.Contains(request.ContentType))
             throw new UnsupportedImageFormatError(request.ContentType);
 
+        var language = request.Language ?? SupportedLanguage.English;
+
         var result = await _imageAnalyzer.AnalyzeAsync(
             request.ImageData,
             request.ContentType,
             request.Model,
+            language,
             cancellationToken);
 
         if (string.IsNullOrWhiteSpace(result.Summary))
@@ -46,6 +50,7 @@ public sealed class AnalyzeImageHandler : IRequestHandler<AnalyzeImageCommand, I
             Summary: result.Summary,
             Insights: result.Insights,
             Tags: result.Tags,
+            Language: language.ToString(),
             AnalyzedAt: DateTime.UtcNow);
     }
 }

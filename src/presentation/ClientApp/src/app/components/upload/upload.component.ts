@@ -25,9 +25,12 @@ export class UploadComponent implements OnInit {
   readonly hasError = this.analysisService.hasError;
   readonly hasVisionModels = this.analysisService.hasVisionModels;
 
+  readonly supportedLanguages = ['English', 'Spanish', 'Italian', 'French', 'German'];
+
   isDragging = signal(false);
   selectedFile = signal<File | null>(null);
   previewUrl = signal<string | null>(null);
+  selectedLanguage = signal('English');
 
   ngOnInit(): void {
     this.analysisService.loadAvailableModels();
@@ -72,11 +75,16 @@ export class UploadComponent implements OnInit {
     this.analysisService.selectModel(select.value ?? '');
   }
 
+  onLanguageSelected(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.selectedLanguage.set(select.value ?? 'English');
+  }
+
   analyzeImage(): void {
     const file = this.selectedFile();
     if (!file || !this.selectedModel()) return;
 
-    this.analysisService.analyzeImage(file, this.selectedModel());
+    this.analysisService.analyzeImage(file, this.selectedModel(), this.selectedLanguage());
   }
 
   formatFileSize(bytes: number): string {

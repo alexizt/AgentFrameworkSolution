@@ -57,7 +57,7 @@ export class ImageAnalysisService {
     }
   }
 
-  analyzeImage(file: File, model: string): void {
+  analyzeImage(file: File, model: string, language: string = 'English'): void {
     this.stateSignal.set('loading');
     this.errorMessageSignal.set(null);
     this.resultSignal.set(null);
@@ -65,6 +65,7 @@ export class ImageAnalysisService {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('model', model);
+    formData.append('language', language);
 
     this.http.post<AnalysisResult>('/api/imageanalysis', formData).subscribe({
       next: (data) => {

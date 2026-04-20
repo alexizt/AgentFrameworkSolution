@@ -2,6 +2,7 @@ using AgentFrameworkSolution.Application.Commands.AnalyzeImage;
 using AgentFrameworkSolution.Application.Errors;
 using AgentFrameworkSolution.Application.Interfaces;
 using AgentFrameworkSolution.Domain.Errors;
+using AgentFrameworkSolution.Domain.ValueObjects;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -52,6 +53,7 @@ public sealed class ImageAnalysisController : ControllerBase
     public async Task<IActionResult> Analyze(
         IFormFile? file,
         [FromForm] string? model,
+        [FromForm] string? language,
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
@@ -63,6 +65,9 @@ public sealed class ImageAnalysisController : ControllerBase
         if (!AllowedContentTypes.Contains(file.ContentType))
             return BadRequest(new { error = $"'{file.ContentType}' is not supported. Use JPEG, PNG, WEBP, or GIF." });
 
+        if (!SupportedLanguageExtensions.TryParse(language, out var parsedLanguage))
+            return BadRequest(new { error = "Invalid language. Supported languages: English, Spanish, Italian, French, German." });
+
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream, cancellationToken);
 
@@ -70,7 +75,8 @@ public sealed class ImageAnalysisController : ControllerBase
             ImageData: memoryStream.ToArray(),
             FileName: file.FileName,
             ContentType: file.ContentType,
-            Model: model);
+            Model: model,
+            Language: parsedLanguage);
 
         try
         {
