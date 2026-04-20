@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Collections.Concurrent;
 using AgentFrameworkSolution.Application.Errors;
 using AgentFrameworkSolution.Application.Interfaces;
 using AgentFrameworkSolution.Domain.ValueObjects;
@@ -107,14 +108,79 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
 
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
         var modelsResponse = JsonSerializer.Deserialize<OllamaModelsResponse>(responseJson, JsonOptions);
-
-        return modelsResponse?.Models?
+        var modelNames = modelsResponse?.Models?
             .Where(x => !string.IsNullOrWhiteSpace(x.Name))
             .Select(x => x.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray()
+            ?? [];
+
+        if (modelNames.Length == 0)
+            return [];
+
+        var visionModels = new ConcurrentBag<string>();
+        using var semaphore = new SemaphoreSlim(4);
+
+        var tasks = modelNames.Select(async modelName =>
+        {
+            await semaphore.WaitAsync(cancellationToken);
+            try
+            {
+                if (await IsVisionModelAsync(modelName, cancellationToken))
+                    visionModels.Add(modelName);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
+
+        await Task.WhenAll(tasks);
+
+        return visionModels
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToArray()
             ?? [];
+    }
+
+    private async Task<bool> IsVisionModelAsync(string modelName, CancellationToken cancellationToken)
+    {
+        var request = new OllamaShowRequest { Name = modelName };
+        var requestJson = JsonSerializer.Serialize(request, JsonOptions);
+        using var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.PostAsync("/api/show", requestContent, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning(
+                "Skipping model {Model} because capability lookup failed with status {StatusCode}.",
+                modelName,
+                response.StatusCode);
+            return false;
+        }
+
+        var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
+        var showResponse = JsonSerializer.Deserialize<OllamaShowResponse>(responseJson, JsonOptions);
+
+        var hasVisionCapability = showResponse?.Capabilities?
+            .Any(x => string.Equals(x, "vision", StringComparison.OrdinalIgnoreCase))
+            ?? false;
+
+        if (hasVisionCapability)
+            return true;
+
+        // Compatibility fallback for older Ollama responses that expose projector/model metadata.
+        var hasProjectorMetadata = showResponse?.ProjectorInfo?.Count > 0;
+        if (hasProjectorMetadata)
+            return true;
+
+        var hasClipModelInfo = showResponse?.ModelInfo?
+            .Keys
+            .Any(x => x.Contains("clip", StringComparison.OrdinalIgnoreCase))
+            ?? false;
+
+        return hasClipModelInfo;
     }
 
     private ImageAnalysisResult ParseAnalysisResponse(string rawContent)
@@ -213,5 +279,17 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
     private sealed class OllamaModelItem
     {
         [JsonPropertyName("name")] public string Name { get; init; } = string.Empty;
+    }
+
+    private sealed class OllamaShowRequest
+    {
+        [JsonPropertyName("name")] public string Name { get; init; } = string.Empty;
+    }
+
+    private sealed class OllamaShowResponse
+    {
+        [JsonPropertyName("capabilities")] public List<string>? Capabilities { get; init; }
+        [JsonPropertyName("projector_info")] public Dictionary<string, JsonElement>? ProjectorInfo { get; init; }
+        [JsonPropertyName("model_info")] public Dictionary<string, JsonElement>? ModelInfo { get; init; }
     }
 }

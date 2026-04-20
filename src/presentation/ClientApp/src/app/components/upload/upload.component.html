@@ -14,7 +14,7 @@
     <header class="text-center mb-12">
       <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-indigo-300 backdrop-blur-sm mb-6">
         <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        Ollama · {{ selectedModel() }}
+        Ollama · {{ selectedModel() || 'No vision model' }}
       </div>
       <h1 class="text-5xl font-extrabold tracking-tight bg-linear-to-r from-white via-indigo-200 to-violet-300 bg-clip-text text-transparent mb-3">
         Vision Analyzer
@@ -38,6 +38,8 @@
             (change)="onModelSelected($event)">
             @if (isLoadingModels()) {
               <option value="" disabled>Loading models...</option>
+            } @else if (!hasVisionModels) {
+              <option value="" disabled>No vision models available</option>
             } @else {
               @for (model of availableModels(); track model) {
                 <option [value]="model">{{ model }}</option>
@@ -102,7 +104,7 @@
             <div class="flex gap-3 mt-4">
               <button
                 (click)="analyzeImage()"
-                [disabled]="isLoading"
+                [disabled]="isLoading || !selectedModel()"
                 class="analyze-btn flex-1 flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-indigo-500 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:from-indigo-400 hover:to-violet-500 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100">
                 @if (isLoading) {
                   <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">

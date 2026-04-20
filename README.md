@@ -69,6 +69,8 @@ API calls to `/api/*` are proxied to `http://localhost:5193` via `proxy.conf.jso
 
 Open **`http://localhost:4200`** in your browser.
 
+The model dropdown in the upload screen lists only **vision-capable** Ollama models discovered from your local Ollama instance.
+
 ---
 
 ## Building for Production
@@ -150,6 +152,21 @@ Analyzes an uploaded image.
 | `400` | Missing file, unsupported format, or file exceeds 10 MB |
 | `500` | Ollama unreachable or model returned an unexpected response |
 
+### `GET /api/imageanalysis/models`
+
+Returns the list of installed **vision-capable** Ollama models used by the UI dropdown.
+
+**Response `200 OK`**
+
+```json
+[
+  "gemma4:e4b",
+  "llava:latest"
+]
+```
+
+If no vision-capable models are installed, the endpoint returns an empty array.
+
 ---
 
 ## Project Structure
@@ -191,6 +208,14 @@ Ensure `ollama serve` is running before starting the backend. The default URL is
 
 **Model not found**  
 Run `ollama pull gemma4:e4b` and wait for the download to complete.
+
+**No vision models available**  
+The model dropdown only shows vision-capable models. Install one and restart the backend if needed:
+
+```bash
+ollama pull gemma4:e4b
+ollama list
+```
 
 **Angular proxy not working**  
 Make sure you start Angular with `npx ng serve` (not `npx ng build`). The proxy only applies to the dev server.

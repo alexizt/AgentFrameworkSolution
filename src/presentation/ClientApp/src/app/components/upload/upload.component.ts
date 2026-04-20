@@ -30,6 +30,7 @@ export class UploadComponent implements OnInit {
   get isLoading(): boolean { return this.state() === 'loading'; }
   get hasResult(): boolean { return this.state() === 'success'; }
   get hasError(): boolean { return this.state() === 'error'; }
+  get hasVisionModels(): boolean { return this.availableModels().length > 0; }
 
   ngOnInit(): void {
     this.analysisService.getAvailableModels().subscribe({
@@ -39,12 +40,14 @@ export class UploadComponent implements OnInit {
           this.availableModels.set(uniqueModels);
           this.selectedModel.set(uniqueModels[0]);
         } else {
-          this.availableModels.set([this.selectedModel()]);
+          this.availableModels.set([]);
+          this.selectedModel.set('');
         }
         this.isLoadingModels.set(false);
       },
       error: () => {
-        this.availableModels.set([this.selectedModel()]);
+        this.availableModels.set([]);
+        this.selectedModel.set('');
         this.isLoadingModels.set(false);
       }
     });
@@ -96,7 +99,7 @@ export class UploadComponent implements OnInit {
 
   analyzeImage(): void {
     const file = this.selectedFile();
-    if (!file) return;
+    if (!file || !this.selectedModel()) return;
 
     this.state.set('loading');
     this.errorMessage.set(null);
