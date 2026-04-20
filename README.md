@@ -53,8 +53,8 @@ cd src/presentation
 dotnet run
 ```
 
-The API starts on `http://localhost:5000` (HTTP) and `https://localhost:5001` (HTTPS).  
-Swagger UI is available at `http://localhost:5000/swagger`.
+The API starts on `http://localhost:5193` (HTTP) and `https://localhost:7062` (HTTPS).  
+Swagger UI is available at `http://localhost:5193/swagger`.
 
 ### Terminal 2 — Frontend (Angular dev server)
 
@@ -65,7 +65,7 @@ npx ng serve
 ```
 
 The Angular dev server starts on `http://localhost:4200`.  
-API calls to `/api/*` are proxied to `http://localhost:5000` via `proxy.conf.json`.
+API calls to `/api/*` are proxied to `http://localhost:5193` via `proxy.conf.json`.
 
 Open **`http://localhost:4200`** in your browser.
 
@@ -89,7 +89,7 @@ cd src/presentation
 dotnet publish -c Release -o ./publish
 ```
 
-The published output includes the compiled API. In production mode, `Program.cs` serves the Angular static files from the SPA output path and falls back to `index.html` for client-side routing.
+The published output includes the compiled API. In production mode, `Program.cs` serves static files from the app content root and falls back to `index.html` for client-side routing.
 
 ---
 
@@ -101,7 +101,8 @@ Backend configuration lives in `src/presentation/appsettings.json`:
 {
   "Ollama": {
     "BaseUrl": "http://localhost:11434",
-    "Model": "gemma4:e4b"
+    "Model": "gemma4:e4b",
+    "Temperature": 0.2
   }
 }
 ```
@@ -112,6 +113,7 @@ Override via environment variables (ASP.NET Core convention):
 # Example: point to a remote Ollama instance
 Ollama__BaseUrl=http://my-ollama-host:11434
 Ollama__Model=gemma4:e4b
+Ollama__Temperature=0.2
 ```
 
 ---
