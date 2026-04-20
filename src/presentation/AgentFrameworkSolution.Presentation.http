@@ -1,0 +1,6 @@
+@AgentFrameworkSolution.Presentation_HostAddress = http://localhost:5193
+
+GET {{AgentFrameworkSolution.Presentation_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

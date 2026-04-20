@@ -1,0 +1,63 @@
+<div class="space-y-4 animate-fadein">
+
+  <!-- Summary Card -->
+  <article class="result-card rounded-2xl p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/15 border border-indigo-500/20">
+        <svg class="h-4 w-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+        </svg>
+      </span>
+      <h2 class="text-sm font-semibold uppercase tracking-widest text-indigo-300">Summary</h2>
+    </div>
+    <p class="text-white/90 leading-relaxed text-base">{{ result().summary }}</p>
+    <p class="mt-4 text-xs text-slate-600">
+      {{ result().fileName }} &nbsp;·&nbsp; {{ result().analyzedAt | date:'medium' }}
+    </p>
+  </article>
+
+  <!-- Insights Card -->
+  @if (result().insights.length > 0) {
+    <article class="result-card rounded-2xl p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/15 border border-violet-500/20">
+          <svg class="h-4 w-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+          </svg>
+        </span>
+        <h2 class="text-sm font-semibold uppercase tracking-widest text-violet-300">Insights</h2>
+      </div>
+      <ul class="space-y-2">
+        @for (insight of result().insights; track $index) {
+          <li class="flex items-start gap-3">
+            <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400/60"></span>
+            <span class="text-white/80 text-sm leading-relaxed">{{ insight }}</span>
+          </li>
+        }
+      </ul>
+    </article>
+  }
+
+  <!-- Tags Card -->
+  @if (result().tags.length > 0) {
+    <article class="result-card rounded-2xl p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15 border border-emerald-500/20">
+          <svg class="h-4 w-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6h.008v.008H6V6z" />
+          </svg>
+        </span>
+        <h2 class="text-sm font-semibold uppercase tracking-widest text-emerald-300">Tags</h2>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        @for (tag of result().tags; track tag) {
+          <span class="tag-pill rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white">
+            {{ tag }}
+          </span>
+        }
+      </div>
+    </article>
+  }
+
+</div>

@@ -1,0 +1,197 @@
+# AgentFrameworkSolution
+
+An image analysis web application built with **Clean Architecture**, **ASP.NET Core 10**, **Angular 21**, and **Ollama** (local LLM). Drop an image in the browser and receive an AI-generated summary, insights, and tags powered by the `gemma4:e4b` multimodal vision model.
+
+---
+
+## Architecture
+
+```
+src/
+├── domain/           # Value objects, domain errors — no dependencies
+├── application/      # CQRS handlers (MediatR), interfaces, DTOs
+├── infrastructure/   # Ollama HTTP client, DI wiring
+└── presentation/     # ASP.NET Core Web API + Angular 21 SPA
+    └── ClientApp/    # Angular app (Tailwind CSS v4, standalone components)
+```
+
+---
+
+## Prerequisites
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| [.NET SDK](https://dotnet.microsoft.com/download) | 10.0+ | `dotnet --version` |
+| [Node.js](https://nodejs.org/) | 22+ LTS | `node --version` |
+| [npm](https://www.npmjs.com/) | 11+ | Bundled with Node |
+| [Angular CLI](https://angular.io/cli) | 21+ | `npm i -g @angular/cli` |
+| [Ollama](https://ollama.com/) | Latest | Running locally |
+
+### Pull the required Ollama model
+
+```bash
+ollama pull gemma4:e4b
+```
+
+Verify Ollama is running and the model is available:
+
+```bash
+ollama list
+# should show gemma4:e4b
+```
+
+---
+
+## Running in Development
+
+Two terminals are required — one for the backend API, one for the Angular dev server.
+
+### Terminal 1 — Backend (ASP.NET Core)
+
+```bash
+cd src/presentation
+dotnet run
+```
+
+The API starts on `http://localhost:5000` (HTTP) and `https://localhost:5001` (HTTPS).  
+Swagger UI is available at `http://localhost:5000/swagger`.
+
+### Terminal 2 — Frontend (Angular dev server)
+
+```bash
+cd src/presentation/ClientApp
+npm install        # only needed the first time
+npx ng serve
+```
+
+The Angular dev server starts on `http://localhost:4200`.  
+API calls to `/api/*` are proxied to `http://localhost:5000` via `proxy.conf.json`.
+
+Open **`http://localhost:4200`** in your browser.
+
+---
+
+## Building for Production
+
+### 1. Build the Angular app
+
+```bash
+cd src/presentation/ClientApp
+npx ng build --configuration production
+```
+
+Output is written to `src/presentation/ClientApp/dist/client-app/browser/`.
+
+### 2. Build and publish the backend
+
+```bash
+cd src/presentation
+dotnet publish -c Release -o ./publish
+```
+
+The published output includes the compiled API. In production mode, `Program.cs` serves the Angular static files from the SPA output path and falls back to `index.html` for client-side routing.
+
+---
+
+## Configuration
+
+Backend configuration lives in `src/presentation/appsettings.json`:
+
+```json
+{
+  "Ollama": {
+    "BaseUrl": "http://localhost:11434",
+    "Model": "gemma4:e4b"
+  }
+}
+```
+
+Override via environment variables (ASP.NET Core convention):
+
+```bash
+# Example: point to a remote Ollama instance
+Ollama__BaseUrl=http://my-ollama-host:11434
+Ollama__Model=gemma4:e4b
+```
+
+---
+
+## API Reference
+
+### `POST /api/imageanalysis`
+
+Analyzes an uploaded image.
+
+**Request** — `multipart/form-data`
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `file` | File | Yes | JPEG, PNG, WebP, or GIF. Max 10 MB. |
+
+**Response `200 OK`**
+
+```json
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "fileName": "photo.jpg",
+  "summary": "A scenic mountain landscape at sunset...",
+  "insights": ["Strong warm color palette", "Golden hour lighting"],
+  "tags": ["landscape", "mountains", "sunset", "nature"],
+  "analyzedAt": "2026-04-20T12:00:00Z"
+}
+```
+
+**Error responses**
+
+| Status | Cause |
+|--------|-------|
+| `400` | Missing file, unsupported format, or file exceeds 10 MB |
+| `500` | Ollama unreachable or model returned an unexpected response |
+
+---
+
+## Project Structure
+
+```
+AgentFrameworkSolution/
+├── AgentFrameworkSolution.slnx          # Solution file (Visual Studio 2022+)
+├── README.md
+└── src/
+    ├── domain/
+    │   ├── Errors/                      # DomainError, InvalidImageError, …
+    │   └── ValueObjects/                # ImageAnalysisResult (record)
+    ├── application/
+    │   ├── Commands/AnalyzeImage/       # AnalyzeImageCommand + Handler
+    │   ├── DTOs/                        # ImageAnalysisDto
+    │   ├── Errors/                      # ApplicationError, AnalysisFailedError
+    │   └── Interfaces/                  # IImageAnalyzer
+    ├── infrastructure/
+    │   ├── Extensions/                  # ServiceCollectionExtensions
+    │   └── Services/                    # OllamaImageAnalyzer
+    └── presentation/
+        ├── Controllers/                 # ImageAnalysisController
+        ├── Program.cs
+        ├── appsettings.json
+        └── ClientApp/                   # Angular 21 SPA
+            └── src/app/
+                ├── components/
+                │   ├── upload/          # Drag-drop image upload
+                │   └── result-card/     # Analysis result display
+                └── services/            # ImageAnalysisService
+```
+
+---
+
+## Troubleshooting
+
+**Ollama connection refused**  
+Ensure `ollama serve` is running before starting the backend. The default URL is `http://localhost:11434`.
+
+**Model not found**  
+Run `ollama pull gemma4:e4b` and wait for the download to complete.
+
+**Angular proxy not working**  
+Make sure you start Angular with `npx ng serve` (not `npx ng build`). The proxy only applies to the dev server.
+
+**`dotnet build` fails with `MSB1009`**  
+Use the `.slnx` file: `dotnet build AgentFrameworkSolution.slnx`. The solution uses the newer `.slnx` format (Visual Studio 2022 17.12+).

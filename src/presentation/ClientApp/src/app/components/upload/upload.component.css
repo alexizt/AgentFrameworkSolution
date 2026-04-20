@@ -1,0 +1,29 @@
+:host {
+  display: block;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.drop-zone {
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.analyze-btn {
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.analyze-btn:not(:disabled):hover {
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.45);
+}

@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/application/">
+    <Project Path="src/application/AgentFrameworkSolution.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/domain/">
+    <Project Path="src/domain/AgentFrameworkSolution.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/infrastructure/">
+    <Project Path="src/infrastructure/AgentFrameworkSolution.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/presentation/">
+    <Project Path="src/presentation/AgentFrameworkSolution.Presentation.csproj" />
+  </Folder>
+</Solution>
