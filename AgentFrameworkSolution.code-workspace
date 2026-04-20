@@ -4,5 +4,8 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"tailwindCSS.lint.arbitraryValue": "ignore",
+		"tailwindCSS.lint.recommended": "ignore"
+	}
 }
