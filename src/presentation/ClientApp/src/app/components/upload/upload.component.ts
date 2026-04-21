@@ -20,6 +20,7 @@ export class UploadComponent implements OnInit {
   readonly availableModels = this.analysisService.availableModels;
   readonly selectedModel = this.analysisService.selectedModel;
   readonly availableRoles = this.analysisService.availableRoles;
+  readonly selectedRole = this.analysisService.selectedRole;
   readonly isLoadingModels = this.analysisService.isLoadingModels;
   readonly isLoadingRoles = this.analysisService.isLoadingRoles;
   readonly isLoadingDropdowns = this.analysisService.isLoadingDropdowns;
@@ -34,7 +35,6 @@ export class UploadComponent implements OnInit {
   selectedFile = signal<File | null>(null);
   previewUrl = signal<string | null>(null);
   selectedLanguage = signal('English');
-  selectedRole = signal('');
 
   ngOnInit(): void {
     this.analysisService.loadAvailableModels();
@@ -87,7 +87,7 @@ export class UploadComponent implements OnInit {
 
   onRoleSelected(event: Event): void {
     const select = event.target as HTMLSelectElement;
-    this.selectedRole.set(select.value ?? '');
+    this.analysisService.selectRole(select.value ?? '');
   }
 
   analyzeImage(): void {

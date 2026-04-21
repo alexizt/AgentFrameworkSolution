@@ -84,7 +84,7 @@ API calls to `/api/*` are proxied to `http://localhost:5193` via `proxy.conf.jso
 Open **`http://localhost:4200`** in your browser.
 
 The model dropdown in the upload screen lists only **vision-capable** Ollama models discovered from your local Ollama instance.
-The role dropdown is loaded from backend configuration and is required before running analysis.
+The role dropdown is loaded from backend configuration, auto-selects the first available role, and is required before running analysis.
 Both dropdowns show a loading indicator while options are being fetched from the backend.
 
 ### API Error Response Shape

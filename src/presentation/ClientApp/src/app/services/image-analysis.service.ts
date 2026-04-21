@@ -18,6 +18,7 @@ export class ImageAnalysisService {
   private readonly selectedModelSignal = signal('');
   private readonly isLoadingModelsSignal = signal(true);
   private readonly availableRolesSignal = signal<string[]>([]);
+  private readonly selectedRoleSignal = signal('');
   private readonly isLoadingRolesSignal = signal(true);
 
   readonly state = this.stateSignal.asReadonly();
@@ -27,6 +28,7 @@ export class ImageAnalysisService {
   readonly selectedModel = this.selectedModelSignal.asReadonly();
   readonly isLoadingModels = this.isLoadingModelsSignal.asReadonly();
   readonly availableRoles = this.availableRolesSignal.asReadonly();
+  readonly selectedRole = this.selectedRoleSignal.asReadonly();
   readonly isLoadingRoles = this.isLoadingRolesSignal.asReadonly();
   readonly isLoadingDropdowns = computed(() => this.isLoadingModels() || this.isLoadingRoles());
   readonly isLoading = computed(() => this.state() === 'loading');
@@ -67,10 +69,16 @@ export class ImageAnalysisService {
         next: (roles) => {
           const uniqueRoles = this.getUniqueNonEmptyValues(roles);
           this.availableRolesSignal.set(uniqueRoles);
+          if (uniqueRoles.length > 0) {
+            this.selectedRoleSignal.set(uniqueRoles[0]);
+          } else {
+            this.selectedRoleSignal.set('');
+          }
           this.isLoadingRolesSignal.set(false);
         },
         error: () => {
           this.availableRolesSignal.set([]);
+          this.selectedRoleSignal.set('');
           this.isLoadingRolesSignal.set(false);
         }
       });
@@ -106,6 +114,13 @@ export class ImageAnalysisService {
     const selected = model.trim();
     if (selected) {
       this.selectedModelSignal.set(selected);
+    }
+  }
+
+  selectRole(role: string): void {
+    const selected = role.trim();
+    if (selected) {
+      this.selectedRoleSignal.set(selected);
     }
   }
 
