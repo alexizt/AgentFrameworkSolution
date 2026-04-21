@@ -128,6 +128,10 @@ dotnet test --logger "console;verbosity=detailed"
 ### Run tests for a specific project
 
 ```bash
+dotnet test tests/AgentFrameworkSolution.Domain.Tests
+```
+
+```bash
 dotnet test tests/AgentFrameworkSolution.Presentation.Tests
 ```
 
@@ -143,9 +147,28 @@ dotnet test tests/AgentFrameworkSolution.Application.Tests
 
 | Test Suite | Location | Tests | Coverage |
 |-----------|----------|-------|----------|
+| **Domain Tests** | `tests/AgentFrameworkSolution.Domain.Tests/` | 13 | SupportedLanguage enum helpers, ImageAnalysisResult defaults/value semantics, domain error construction |
 | **Presentation Tests** | `tests/AgentFrameworkSolution.Presentation.Tests/` | 9 | Global exception handling middleware |
 | **Infrastructure Tests** | `tests/AgentFrameworkSolution.Infrastructure.Tests/` | 9 | Ollama adapter behavior + DI wiring |
 | **Application Tests** | `tests/AgentFrameworkSolution.Application.Tests/` | 6 | AnalyzeImage command handler validation + mapping |
+
+#### Domain Tests (13 tests)
+
+Verifies the current domain-layer behavior directly:
+
+- ✅ `SupportedLanguage.GetLanguageName()` maps every supported enum value
+- ✅ `SupportedLanguage.TryParse()` handles valid names case-insensitively
+- ✅ Null, empty, and whitespace language inputs default to English
+- ✅ Invalid language values fail parsing predictably
+- ✅ `ImageAnalysisResult.Empty` returns an empty English result
+- ✅ `ImageAnalysisResult` preserves constructor values and default language
+- ✅ Domain errors expose consistent `Code`, `Message`, and base exception state
+
+**Run domain tests:**
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Domain.Tests --logger "console;verbosity=normal"
+```
 
 #### GlobalExceptionHandlingMiddlewareTests (9 tests)
 
