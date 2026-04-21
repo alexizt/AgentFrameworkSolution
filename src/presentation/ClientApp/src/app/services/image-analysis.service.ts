@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { retry, timer } from 'rxjs';
+import { Observable, retry, timer } from 'rxjs';
 import { AnalysisResult } from '../models/analysis-result.model';
 
 export type AnalysisState = 'idle' | 'loading' | 'success' | 'error';
@@ -34,23 +34,10 @@ export class ImageAnalysisService {
   loadAvailableModels(): void {
     this.isLoadingModelsSignal.set(true);
 
-    this.http
-      .get<string[]>('/api/imageanalysis/models')
-      .pipe(
-        retry({
-          count: this.modelsLoadRetryCount,
-          delay: (error, retryCount) => {
-            if (!this.shouldRetryLoadingModels(error)) {
-              throw error;
-            }
-
-            return timer(this.modelsLoadRetryBaseDelayMs * retryCount);
-          }
-        })
-      )
+    this.getWithRetry('/api/imageanalysis/models')
       .subscribe({
         next: (models) => {
-          const uniqueModels = [...new Set(models)].filter((x) => !!x?.trim());
+          const uniqueModels = this.getUniqueNonEmptyValues(models);
           if (uniqueModels.length > 0) {
             this.availableModelsSignal.set(uniqueModels);
             this.selectedModelSignal.set(uniqueModels[0]);
@@ -70,15 +57,37 @@ export class ImageAnalysisService {
   }
 
   loadAvailableRoles(): void {
-    this.http.get<string[]>('/api/imageanalysis/roles').subscribe({
-      next: (roles) => {
-        const uniqueRoles = [...new Set(roles)].map((x) => x?.trim()).filter((x): x is string => !!x);
-        this.availableRolesSignal.set(uniqueRoles);
-      },
-      error: () => {
-        this.availableRolesSignal.set([]);
-      }
-    });
+    this.getWithRetry('/api/imageanalysis/roles')
+      .subscribe({
+        next: (roles) => {
+          const uniqueRoles = this.getUniqueNonEmptyValues(roles);
+          this.availableRolesSignal.set(uniqueRoles);
+        },
+        error: () => {
+          this.availableRolesSignal.set([]);
+        }
+      });
+  }
+
+  private getWithRetry(url: string): Observable<string[]> {
+    return this.http.get<string[]>(url).pipe(
+      retry({
+        count: this.modelsLoadRetryCount,
+        delay: (error, retryCount) => {
+          if (!this.shouldRetryLoadingModels(error)) {
+            throw error;
+          }
+
+          return timer(this.modelsLoadRetryBaseDelayMs * retryCount);
+        }
+      })
+    );
+  }
+
+  private getUniqueNonEmptyValues(values: string[]): string[] {
+    return [...new Set(values)]
+      .map((value) => value?.trim())
+      .filter((value): value is string => !!value);
   }
 
   private shouldRetryLoadingModels(error: unknown): boolean {
