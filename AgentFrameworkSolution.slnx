@@ -12,4 +12,17 @@
   <Folder Name="/src/presentation/">
     <Project Path="src/presentation/AgentFrameworkSolution.Presentation.csproj" />
   </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/AgentFrameworkSolution.Domain.Tests/">
+    <Project Path="tests/AgentFrameworkSolution.Domain.Tests/AgentFrameworkSolution.Domain.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/AgentFrameworkSolution.Infrastructure.Tests/">
+    <Project Path="tests/AgentFrameworkSolution.Infrastructure.Tests/AgentFrameworkSolution.Infrastructure.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/AgentFrameworkSolution.Application.Tests/">
+    <Project Path="tests/AgentFrameworkSolution.Application.Tests/AgentFrameworkSolution.Application.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/AgentFrameworkSolution.Presentation.Tests/">
+    <Project Path="tests/AgentFrameworkSolution.Presentation.Tests/AgentFrameworkSolution.Presentation.Tests.csproj" />
+  </Folder>
 </Solution>

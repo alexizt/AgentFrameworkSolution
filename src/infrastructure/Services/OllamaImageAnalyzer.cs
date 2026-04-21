@@ -40,14 +40,17 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
         string contentType,
         string? model = null,
         SupportedLanguage? language = null,
+        string? role = null,
         CancellationToken cancellationToken = default)
     {
         var base64Image = Convert.ToBase64String(imageData);
         var effectiveModel = string.IsNullOrWhiteSpace(model) ? _model : model.Trim();
         var effectiveLanguage = language ?? SupportedLanguage.English;
+        var effectiveRole = string.IsNullOrWhiteSpace(role) ? "Computer Vision Specialist" : role.Trim();
         var languageName = effectiveLanguage.GetLanguageName();
 
         var promptContent = $$"""
+            You are acting as a {{effectiveRole}}.
             Analyze this image carefully and return a JSON object with exactly these fields:
             {
               "summary": "2-3 sentence description of what you see",
@@ -78,9 +81,10 @@ public sealed class OllamaImageAnalyzer : IImageAnalyzer
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         _logger.LogInformation(
-            "Sending image analysis request to Ollama (model: {Model}, language: {Language}, temperature: {Temperature})",
+            "Sending image analysis request to Ollama (model: {Model}, language: {Language}, role: {Role}, temperature: {Temperature})",
             effectiveModel,
             languageName,
+            effectiveRole,
             _temperature);
 
         var response = await _httpClient.PostAsync("/api/chat", content, cancellationToken);

@@ -17,6 +17,7 @@ export class ImageAnalysisService {
   private readonly availableModelsSignal = signal<string[]>([]);
   private readonly selectedModelSignal = signal('');
   private readonly isLoadingModelsSignal = signal(true);
+  private readonly availableRolesSignal = signal<string[]>([]);
 
   readonly state = this.stateSignal.asReadonly();
   readonly result = this.resultSignal.asReadonly();
@@ -24,6 +25,7 @@ export class ImageAnalysisService {
   readonly availableModels = this.availableModelsSignal.asReadonly();
   readonly selectedModel = this.selectedModelSignal.asReadonly();
   readonly isLoadingModels = this.isLoadingModelsSignal.asReadonly();
+  readonly availableRoles = this.availableRolesSignal.asReadonly();
   readonly isLoading = computed(() => this.state() === 'loading');
   readonly hasResult = computed(() => this.state() === 'success');
   readonly hasError = computed(() => this.state() === 'error');
@@ -67,6 +69,18 @@ export class ImageAnalysisService {
       });
   }
 
+  loadAvailableRoles(): void {
+    this.http.get<string[]>('/api/imageanalysis/roles').subscribe({
+      next: (roles) => {
+        const uniqueRoles = [...new Set(roles)].map((x) => x?.trim()).filter((x): x is string => !!x);
+        this.availableRolesSignal.set(uniqueRoles);
+      },
+      error: () => {
+        this.availableRolesSignal.set([]);
+      }
+    });
+  }
+
   private shouldRetryLoadingModels(error: unknown): boolean {
     const status = (error as { status?: number })?.status;
     return status === 0 || (typeof status === 'number' && status >= 500);
@@ -79,7 +93,7 @@ export class ImageAnalysisService {
     }
   }
 
-  analyzeImage(file: File, model: string, language: string = 'English'): void {
+  analyzeImage(file: File, model: string, role: string, language: string = 'English'): void {
     this.stateSignal.set('loading');
     this.errorMessageSignal.set(null);
     this.resultSignal.set(null);
@@ -88,6 +102,7 @@ export class ImageAnalysisService {
     formData.append('file', file);
     formData.append('model', model);
     formData.append('language', language);
+    formData.append('role', role);
 
     this.http.post<AnalysisResult>('/api/imageanalysis', formData).subscribe({
       next: (data) => {

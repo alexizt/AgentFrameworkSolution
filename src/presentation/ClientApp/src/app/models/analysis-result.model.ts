@@ -5,5 +5,6 @@ export interface AnalysisResult {
   insights: string[];
   tags: string[];
   language: string;
+  role: string;
   analyzedAt: string;
 }

@@ -84,6 +84,21 @@ API calls to `/api/*` are proxied to `http://localhost:5193` via `proxy.conf.jso
 Open **`http://localhost:4200`** in your browser.
 
 The model dropdown in the upload screen lists only **vision-capable** Ollama models discovered from your local Ollama instance.
+The role dropdown is loaded from backend configuration and is required before running analysis.
+
+### API Error Response Shape
+
+All API errors now use a consistent JSON object shape:
+
+```json
+{
+  "error": "Human-readable message",
+  "code": "STABLE_ERROR_CODE",
+  "traceId": null
+}
+```
+
+This includes both global exception middleware responses and explicit 400 validation failures from `POST /api/imageanalysis`.
 
 ---
 
@@ -109,6 +124,129 @@ The published output includes the compiled API. In production mode, `Program.cs`
 
 ---
 
+## Testing
+
+Unit tests are implemented using **xUnit** and **Moq** for isolated component testing.
+The solution includes all four test projects, including presentation tests, so IDE and solution-based test discovery can enumerate the full test suite.
+
+### Run all tests
+
+```bash
+dotnet test
+```
+
+### Run tests with verbose output
+
+```bash
+dotnet test --logger "console;verbosity=detailed"
+```
+
+### Run tests for a specific project
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Domain.Tests
+```
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Presentation.Tests
+```
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Infrastructure.Tests
+```
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Application.Tests
+```
+
+### Test Coverage
+
+| Test Suite | Location | Tests | Coverage |
+|-----------|----------|-------|----------|
+| **Domain Tests** | `tests/AgentFrameworkSolution.Domain.Tests/` | 13 | SupportedLanguage enum helpers, ImageAnalysisResult defaults/value semantics, domain error construction |
+| **Presentation Tests** | `tests/AgentFrameworkSolution.Presentation.Tests/` | 17 | Global exception handling middleware + ImageAnalysis controller validation responses |
+| **Infrastructure Tests** | `tests/AgentFrameworkSolution.Infrastructure.Tests/` | 9 | Ollama adapter behavior + DI wiring |
+| **Application Tests** | `tests/AgentFrameworkSolution.Application.Tests/` | 6 | AnalyzeImage command handler validation + mapping |
+
+#### Domain Tests (13 tests)
+
+Verifies the current domain-layer behavior directly:
+
+- ✅ `SupportedLanguage.GetLanguageName()` maps every supported enum value
+- ✅ `SupportedLanguage.TryParse()` handles valid names case-insensitively
+- ✅ Null, empty, and whitespace language inputs default to English
+- ✅ Invalid language values fail parsing predictably
+- ✅ `ImageAnalysisResult.Empty` returns an empty English result
+- ✅ `ImageAnalysisResult` preserves constructor values and default language
+- ✅ Domain errors expose consistent `Code`, `Message`, and base exception state
+
+**Run domain tests:**
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Domain.Tests --logger "console;verbosity=normal"
+```
+
+#### GlobalExceptionHandlingMiddlewareTests (9 tests)
+
+Verifies centralized error handling, logging, and response sanitization:
+
+- ✅ Domain errors return 400 Bad Request
+- ✅ Application errors return 500 Internal Server Error
+- ✅ Generic exceptions are sanitized (production) vs. detailed (development)
+- ✅ Stack traces are logged internally but never exposed to clients
+- ✅ Responses are valid JSON with consistent error format
+- ✅ Logging occurs at appropriate levels (Warning/Error)
+
+**Run presentation tests:**
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Presentation.Tests --logger "console;verbosity=normal"
+```
+
+#### ImageAnalysisControllerTests (8 tests)
+
+Verifies controller behavior and validation contracts:
+
+- ✅ Roles endpoint returns configured roles
+- ✅ Role normalization preserves configured canonical role on success
+- ✅ Validation failures return 400 with standardized `ErrorResponse` shape (`error`, `code`, `traceId`)
+- ✅ Validation error codes are stable for file-required, file-too-large, unsupported-format, invalid-language, role-required, and invalid-role paths
+
+#### OllamaImageAnalyzerTests (9 tests)
+
+Verifies infrastructure adapter behavior and registration:
+
+- Configured/default model and temperature usage
+- Model override behavior
+- Error handling for non-success responses and empty payloads
+- JSON parsing fallback behavior
+- Vision model detection and sorting via `/api/tags` and `/api/show`
+- DI registration (`IImageAnalyzer`) with configured/default base URL and timeout
+
+**Run infrastructure tests:**
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Infrastructure.Tests --logger "console;verbosity=normal"
+```
+
+#### AnalyzeImageHandlerTests (6 tests)
+
+Verifies application-layer command handler behavior:
+
+- Input validation (empty data, oversized payload, unsupported format)
+- Language defaulting to English when omitted
+- Dependency orchestration to `IImageAnalyzer`
+- Failure behavior when analyzer returns empty summary
+- DTO mapping output on successful analysis
+
+**Run application tests:**
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Application.Tests --logger "console;verbosity=normal"
+```
+
+---
+
 ## Configuration
 
 Backend configuration lives in `src/presentation/appsettings.json`:
@@ -119,6 +257,15 @@ Backend configuration lives in `src/presentation/appsettings.json`:
     "BaseUrl": "http://localhost:11434",
     "Model": "gemma4:e4b",
     "Temperature": 0.2
+  },
+  "Analysis": {
+    "Roles": [
+      "Digital Forensic Analyst",
+      "Computer Vision Specialist",
+      "UX/UI Designer",
+      "Radiologist / Medical Imaging Technician",
+      "Art Critic or Curator"
+    ]
   }
 }
 ```
@@ -130,6 +277,10 @@ Override via environment variables (ASP.NET Core convention):
 Ollama__BaseUrl=http://my-ollama-host:11434
 Ollama__Model=gemma4:e4b
 Ollama__Temperature=0.2
+
+# Analysis roles (array index based)
+Analysis__Roles__0=Digital Forensic Analyst
+Analysis__Roles__1=Computer Vision Specialist
 ```
 
 ---
@@ -145,6 +296,9 @@ Analyzes an uploaded image.
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `file` | File | Yes | JPEG, PNG, WebP, or GIF. Max 10 MB. |
+| `model` | string | No | Optional Ollama model override. |
+| `language` | string | No | Defaults to `English` if omitted. |
+| `role` | string | Yes | Must match one configured role from `Analysis:Roles`. |
 
 **Response `200 OK`**
 
@@ -155,6 +309,8 @@ Analyzes an uploaded image.
   "summary": "A scenic mountain landscape at sunset...",
   "insights": ["Strong warm color palette", "Golden hour lighting"],
   "tags": ["landscape", "mountains", "sunset", "nature"],
+  "language": "English",
+  "role": "Art Critic or Curator",
   "analyzedAt": "2026-04-20T12:00:00Z"
 }
 ```
@@ -180,6 +336,22 @@ Returns the list of installed **vision-capable** Ollama models used by the UI dr
 ```
 
 If no vision-capable models are installed, the endpoint returns an empty array.
+
+### `GET /api/imageanalysis/roles`
+
+Returns the configured role list used by the role dropdown in the upload screen.
+
+**Response `200 OK`**
+
+```json
+[
+  "Digital Forensic Analyst",
+  "Computer Vision Specialist",
+  "UX/UI Designer",
+  "Radiologist / Medical Imaging Technician",
+  "Art Critic or Curator"
+]
+```
 
 ---
 

@@ -67,6 +67,24 @@
         </div>
       </div>
 
+      <div class="mb-5">
+        <label for="roleSelect" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">Analysis Role</label>
+        <div class="relative">
+          <select
+            id="roleSelect"
+            class="w-full appearance-none rounded-xl border border-white/10 bg-slate-900/80 px-4 py-2.5 pr-10 text-sm text-white outline-none transition-colors focus:border-indigo-400/70"
+            [disabled]="isLoading()"
+            [value]="selectedRole()"
+            (change)="onRoleSelected($event)">
+            <option value="" disabled>Select a role</option>
+            @for (role of availableRoles(); track role) {
+              <option [value]="role">{{ role }}</option>
+            }
+          </select>
+          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400" aria-hidden="true">▾</span>
+        </div>
+      </div>
+
       @if (!selectedFile()) {
         <!-- Drop Zone -->
         <div
@@ -121,7 +139,7 @@
             <div class="flex gap-3 mt-4">
               <button
                 (click)="analyzeImage()"
-                [disabled]="isLoading() || isLoadingModels() || !selectedModel()"
+                [disabled]="isLoading() || isLoadingModels() || !selectedModel() || !selectedRole()"
                 class="analyze-btn flex-1 flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-indigo-500 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:from-indigo-400 hover:to-violet-500 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100">
                 @if (isLoading()) {
                   <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">

@@ -7,4 +7,5 @@ public record ImageAnalysisDto(
     IReadOnlyList<string> Insights,
     IReadOnlyList<string> Tags,
     string Language,
+    string Role,
     DateTime AnalyzedAt);

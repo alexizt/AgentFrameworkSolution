@@ -1,8 +1,7 @@
 using AgentFrameworkSolution.Application.Commands.AnalyzeImage;
-using AgentFrameworkSolution.Application.Errors;
 using AgentFrameworkSolution.Application.Interfaces;
-using AgentFrameworkSolution.Domain.Errors;
 using AgentFrameworkSolution.Domain.ValueObjects;
+using AgentFrameworkSolution.Presentation.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,11 +18,20 @@ public sealed class ImageAnalysisController : ControllerBase
 
     private readonly IMediator _mediator;
     private readonly IImageAnalyzer _imageAnalyzer;
+    private readonly string[] _allowedRoles;
 
-    public ImageAnalysisController(IMediator mediator, IImageAnalyzer imageAnalyzer)
+    public ImageAnalysisController(
+        IMediator mediator,
+        IImageAnalyzer imageAnalyzer,
+        IConfiguration configuration)
     {
         _mediator = mediator;
         _imageAnalyzer = imageAnalyzer;
+        _allowedRoles = (configuration.GetSection("Analysis:Roles").Get<string[]>() ?? [])
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     /// <summary>Returns the available Ollama model names configured in the local Ollama instance.</summary>
@@ -32,15 +40,16 @@ public sealed class ImageAnalysisController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetModels(CancellationToken cancellationToken)
     {
-        try
-        {
-            var models = await _imageAnalyzer.GetAvailableModelsAsync(cancellationToken);
-            return Ok(models);
-        }
-        catch (ApplicationError ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message, code = ex.Code });
-        }
+        var models = await _imageAnalyzer.GetAvailableModelsAsync(cancellationToken);
+        return Ok(models);
+    }
+
+    /// <summary>Returns the configured analysis role options used by the UI dropdown.</summary>
+    [HttpGet("roles")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult GetRoles()
+    {
+        return Ok(_allowedRoles);
     }
 
     /// <summary>Analyzes an uploaded image using the configured Ollama vision model.</summary>
@@ -54,19 +63,30 @@ public sealed class ImageAnalysisController : ControllerBase
         IFormFile? file,
         [FromForm] string? model,
         [FromForm] string? language,
+        [FromForm] string? role,
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
-            return BadRequest(new { error = "No file was provided." });
+            return ValidationBadRequest("No file was provided.", "FILE_REQUIRED");
 
         if (file.Length > MaxFileSizeBytes)
-            return BadRequest(new { error = "File size exceeds the 10 MB limit." });
+            return ValidationBadRequest("File size exceeds the 10 MB limit.", "IMAGE_TOO_LARGE");
 
         if (!AllowedContentTypes.Contains(file.ContentType))
-            return BadRequest(new { error = $"'{file.ContentType}' is not supported. Use JPEG, PNG, WEBP, or GIF." });
+            return ValidationBadRequest($"'{file.ContentType}' is not supported. Use JPEG, PNG, WEBP, or GIF.", "UNSUPPORTED_FORMAT");
 
         if (!SupportedLanguageExtensions.TryParse(language, out var parsedLanguage))
-            return BadRequest(new { error = "Invalid language. Supported languages: English, Spanish, Italian, French, German." });
+            return ValidationBadRequest("Invalid language. Supported languages: English, Spanish, Italian, French, German.", "INVALID_LANGUAGE");
+
+        if (string.IsNullOrWhiteSpace(role))
+            return ValidationBadRequest("Role is required.", "ROLE_REQUIRED");
+
+        var normalizedRole = role.Trim();
+        var matchedRole = _allowedRoles.FirstOrDefault(x =>
+            string.Equals(x, normalizedRole, StringComparison.OrdinalIgnoreCase));
+
+        if (string.IsNullOrWhiteSpace(matchedRole))
+            return ValidationBadRequest("Invalid role. Select a role from the configured list.", "INVALID_ROLE");
 
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream, cancellationToken);
@@ -76,20 +96,18 @@ public sealed class ImageAnalysisController : ControllerBase
             FileName: file.FileName,
             ContentType: file.ContentType,
             Model: model,
-            Language: parsedLanguage);
+            Language: parsedLanguage,
+            Role: matchedRole);
 
-        try
-        {
-            var result = await _mediator.Send(command, cancellationToken);
-            return Ok(result);
-        }
-        catch (DomainError ex)
-        {
-            return BadRequest(new { error = ex.Message, code = ex.Code });
-        }
-        catch (ApplicationError ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message, code = ex.Code });
-        }
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    private BadRequestObjectResult ValidationBadRequest(string error, string code)
+    {
+        return BadRequest(new ErrorResponse(
+            Error: error,
+            Code: code,
+            TraceId: null));
     }
 }
