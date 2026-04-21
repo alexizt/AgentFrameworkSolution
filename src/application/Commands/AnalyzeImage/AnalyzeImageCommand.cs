@@ -1,6 +1,6 @@
 using AgentFrameworkSolution.Application.DTOs;
 using AgentFrameworkSolution.Domain.ValueObjects;
-using MediatR;
+using Cortex.Mediator.Commands;
 
 namespace AgentFrameworkSolution.Application.Commands.AnalyzeImage;
 
@@ -10,4 +10,4 @@ public record AnalyzeImageCommand(
     string ContentType,
     string? Model,
     SupportedLanguage? Language = null,
-    string? Role = null) : IRequest<ImageAnalysisDto>;
+    string? Role = null) : ICommand<ImageAnalysisDto>;

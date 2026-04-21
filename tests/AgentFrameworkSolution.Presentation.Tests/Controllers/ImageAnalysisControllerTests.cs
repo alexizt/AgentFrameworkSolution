@@ -1,9 +1,9 @@
 using AgentFrameworkSolution.Application.Commands.AnalyzeImage;
 using AgentFrameworkSolution.Application.DTOs;
 using AgentFrameworkSolution.Application.Interfaces;
+using Cortex.Mediator;
 using AgentFrameworkSolution.Presentation.Controllers;
 using AgentFrameworkSolution.Presentation.DTOs;
-using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -129,7 +129,7 @@ public sealed class ImageAnalysisControllerTests
             out _);
 
         mediatorMock
-            .Setup(x => x.Send(It.IsAny<AnalyzeImageCommand>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SendCommandAsync(It.IsAny<AnalyzeImageCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ImageAnalysisDto(
                 Id: Guid.NewGuid(),
                 FileName: "photo.png",
@@ -147,7 +147,7 @@ public sealed class ImageAnalysisControllerTests
         Assert.IsType<OkObjectResult>(result);
 
         mediatorMock.Verify(x =>
-            x.Send(
+            x.SendCommandAsync(
                 It.Is<AnalyzeImageCommand>(cmd => cmd.Role == "Digital Forensic Analyst"),
                 It.IsAny<CancellationToken>()),
             Times.Once);

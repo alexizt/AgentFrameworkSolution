@@ -1,5 +1,6 @@
 using AgentFrameworkSolution.Application.Commands.AnalyzeImage;
 using AgentFrameworkSolution.Application.Errors;
+using Cortex.Mediator.DependencyInjection;
 using AgentFrameworkSolution.Domain.Errors;
 using AgentFrameworkSolution.Infrastructure.Extensions;
 using AgentFrameworkSolution.Presentation.Middleware;
@@ -13,8 +14,7 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "Vision Analyzer API", Version = "v1" });
 });
 
-builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(AnalyzeImageHandler).Assembly));
+builder.Services.AddCortexMediator(new[] { typeof(AnalyzeImageHandler) });
 
 builder.Services.AddInfrastructure(builder.Configuration);
 

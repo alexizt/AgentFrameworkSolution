@@ -1,8 +1,8 @@
 using AgentFrameworkSolution.Application.Commands.AnalyzeImage;
 using AgentFrameworkSolution.Application.Interfaces;
+using Cortex.Mediator;
 using AgentFrameworkSolution.Domain.ValueObjects;
 using AgentFrameworkSolution.Presentation.DTOs;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgentFrameworkSolution.Presentation.Controllers;
@@ -99,7 +99,7 @@ public sealed class ImageAnalysisController : ControllerBase
             Language: parsedLanguage,
             Role: matchedRole);
 
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await _mediator.SendCommandAsync(command, cancellationToken);
         return Ok(result);
     }
 

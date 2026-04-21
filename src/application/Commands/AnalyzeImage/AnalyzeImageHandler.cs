@@ -3,11 +3,11 @@ using AgentFrameworkSolution.Application.Errors;
 using AgentFrameworkSolution.Application.Interfaces;
 using AgentFrameworkSolution.Domain.Errors;
 using AgentFrameworkSolution.Domain.ValueObjects;
-using MediatR;
+using Cortex.Mediator.Commands;
 
 namespace AgentFrameworkSolution.Application.Commands.AnalyzeImage;
 
-public sealed class AnalyzeImageHandler : IRequestHandler<AnalyzeImageCommand, ImageAnalysisDto>
+public sealed class AnalyzeImageHandler : ICommandHandler<AnalyzeImageCommand, ImageAnalysisDto>
 {
     private static readonly HashSet<string> SupportedContentTypes =
         ["image/jpeg", "image/png", "image/webp", "image/gif"];

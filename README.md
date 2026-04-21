@@ -9,7 +9,7 @@ An image analysis web application built with **Clean Architecture**, **ASP.NET C
 ```
 src/
 ├── domain/           # Value objects, domain errors — no dependencies
-├── application/      # CQRS handlers (MediatR), interfaces, DTOs
+├── application/      # CQRS handlers (Cortex.Mediator), interfaces, DTOs
 ├── infrastructure/   # Ollama HTTP client, DI wiring
 └── presentation/     # ASP.NET Core Web API + Angular 21 SPA
     └── ClientApp/    # Angular app (Tailwind CSS v4, standalone components)
