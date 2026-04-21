@@ -32,15 +32,8 @@ public sealed class ImageAnalysisController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetModels(CancellationToken cancellationToken)
     {
-        try
-        {
-            var models = await _imageAnalyzer.GetAvailableModelsAsync(cancellationToken);
-            return Ok(models);
-        }
-        catch (ApplicationError ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message, code = ex.Code });
-        }
+        var models = await _imageAnalyzer.GetAvailableModelsAsync(cancellationToken);
+        return Ok(models);
     }
 
     /// <summary>Analyzes an uploaded image using the configured Ollama vision model.</summary>
@@ -78,18 +71,7 @@ public sealed class ImageAnalysisController : ControllerBase
             Model: model,
             Language: parsedLanguage);
 
-        try
-        {
-            var result = await _mediator.Send(command, cancellationToken);
-            return Ok(result);
-        }
-        catch (DomainError ex)
-        {
-            return BadRequest(new { error = ex.Message, code = ex.Code });
-        }
-        catch (ApplicationError ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message, code = ex.Code });
-        }
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
     }
 }

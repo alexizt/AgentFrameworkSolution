@@ -2,6 +2,7 @@ using AgentFrameworkSolution.Application.Commands.AnalyzeImage;
 using AgentFrameworkSolution.Application.Errors;
 using AgentFrameworkSolution.Domain.Errors;
 using AgentFrameworkSolution.Infrastructure.Extensions;
+using AgentFrameworkSolution.Presentation.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,7 @@ else
     app.UseStaticFiles();
 }
 
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 app.UseCors();
 app.UseAuthorization();
 app.MapControllers();

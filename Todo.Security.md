@@ -47,12 +47,15 @@
 - **Impact**: Credentials visible in source control if not careful; exposure in logs
 - **File**: [src/presentation/appsettings.json](src/presentation/appsettings.json)
 
-### 7. **No Error Handling Middleware**
-- Unhandled exceptions could leak stack traces and internal details
-- `Program.cs` has no global exception handler
-- **Missing**: Centralized error handling that sanitizes exception responses
-- **Impact**: Information disclosure vulnerability
-- **File**: [src/presentation/Program.cs](src/presentation/Program.cs)
+### 7. ✅ **No Error Handling Middleware** (RESOLVED)
+- ~~Unhandled exceptions could leak stack traces and internal details~~
+- **Status**: Global exception handling middleware implemented
+- **Changes**: 
+  - Created `src/presentation/Middleware/GlobalExceptionHandlingMiddleware.cs`
+  - Created `src/presentation/DTOs/ErrorResponse.cs`
+  - Updated `src/presentation/Program.cs` to register middleware
+  - Simplified `src/presentation/Controllers/ImageAnalysisController.cs` by removing redundant try-catch blocks
+- **Result**: Centralized error handling with proper logging and sanitized client responses
 
 ### 8. **Logging May Expose Sensitive Data**
 - `OllamaImageAnalyzer.cs` logs model, language, and temperature
@@ -109,7 +112,7 @@
 | **P0** | Validate actual file content (magic bytes), not just Content-Type | [ImageAnalysisController.cs](src/presentation/Controllers/ImageAnalysisController.cs) | Medium |
 | **P1** | Add allowlist validation for `model` parameter | [ImageAnalysisController.cs](src/presentation/Controllers/ImageAnalysisController.cs) | Low |
 | **P1** | Move secrets to Key Vault or User Secrets | [appsettings.json](src/presentation/appsettings.json) | Low |
-| **P1** | Add global exception handler middleware | [Program.cs](src/presentation/Program.cs) | Low |
+| ✅ **P1** | Add global exception handler middleware | [Program.cs](src/presentation/Program.cs) | Low |
 | **P2** | Add rate limiting middleware | [Program.cs](src/presentation/Program.cs) | Medium |
 | **P2** | Add security headers (X-Content-Type-Options, CSP, etc.) | [Program.cs](src/presentation/Program.cs) | Low |
 | **P2** | Reduce HttpClient timeout to 30-45 seconds | [ServiceCollectionExtensions.cs](src/infrastructure/Extensions/ServiceCollectionExtensions.cs) | Low |
