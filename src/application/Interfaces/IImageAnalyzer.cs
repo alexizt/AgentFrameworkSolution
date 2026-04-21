@@ -9,6 +9,7 @@ public interface IImageAnalyzer
         string contentType,
         string? model = null,
         SupportedLanguage? language = null,
+        string? role = null,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<string>> GetAvailableModelsAsync(

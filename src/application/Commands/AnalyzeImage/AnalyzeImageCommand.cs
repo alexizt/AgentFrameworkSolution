@@ -9,4 +9,5 @@ public record AnalyzeImageCommand(
     string FileName,
     string ContentType,
     string? Model,
-    SupportedLanguage? Language = null) : IRequest<ImageAnalysisDto>;
+    SupportedLanguage? Language = null,
+    string? Role = null) : IRequest<ImageAnalysisDto>;

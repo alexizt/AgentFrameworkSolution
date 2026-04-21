@@ -19,11 +19,20 @@ public sealed class ImageAnalysisController : ControllerBase
 
     private readonly IMediator _mediator;
     private readonly IImageAnalyzer _imageAnalyzer;
+    private readonly string[] _allowedRoles;
 
-    public ImageAnalysisController(IMediator mediator, IImageAnalyzer imageAnalyzer)
+    public ImageAnalysisController(
+        IMediator mediator,
+        IImageAnalyzer imageAnalyzer,
+        IConfiguration configuration)
     {
         _mediator = mediator;
         _imageAnalyzer = imageAnalyzer;
+        _allowedRoles = (configuration.GetSection("Analysis:Roles").Get<string[]>() ?? [])
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     /// <summary>Returns the available Ollama model names configured in the local Ollama instance.</summary>
@@ -34,6 +43,14 @@ public sealed class ImageAnalysisController : ControllerBase
     {
         var models = await _imageAnalyzer.GetAvailableModelsAsync(cancellationToken);
         return Ok(models);
+    }
+
+    /// <summary>Returns the configured analysis role options used by the UI dropdown.</summary>
+    [HttpGet("roles")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult GetRoles()
+    {
+        return Ok(_allowedRoles);
     }
 
     /// <summary>Analyzes an uploaded image using the configured Ollama vision model.</summary>
@@ -47,6 +64,7 @@ public sealed class ImageAnalysisController : ControllerBase
         IFormFile? file,
         [FromForm] string? model,
         [FromForm] string? language,
+        [FromForm] string? role,
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
@@ -61,6 +79,16 @@ public sealed class ImageAnalysisController : ControllerBase
         if (!SupportedLanguageExtensions.TryParse(language, out var parsedLanguage))
             return BadRequest(new { error = "Invalid language. Supported languages: English, Spanish, Italian, French, German." });
 
+        if (string.IsNullOrWhiteSpace(role))
+            return BadRequest(new { error = "Role is required." });
+
+        var normalizedRole = role.Trim();
+        var matchedRole = _allowedRoles.FirstOrDefault(x =>
+            string.Equals(x, normalizedRole, StringComparison.OrdinalIgnoreCase));
+
+        if (string.IsNullOrWhiteSpace(matchedRole))
+            return BadRequest(new { error = "Invalid role. Select a role from the configured list." });
+
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream, cancellationToken);
 
@@ -69,7 +97,8 @@ public sealed class ImageAnalysisController : ControllerBase
             FileName: file.FileName,
             ContentType: file.ContentType,
             Model: model,
-            Language: parsedLanguage);
+            Language: parsedLanguage,
+            Role: matchedRole);
 
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);

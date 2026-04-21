@@ -84,6 +84,7 @@ API calls to `/api/*` are proxied to `http://localhost:5193` via `proxy.conf.jso
 Open **`http://localhost:4200`** in your browser.
 
 The model dropdown in the upload screen lists only **vision-capable** Ollama models discovered from your local Ollama instance.
+The role dropdown is loaded from backend configuration and is required before running analysis.
 
 ---
 
@@ -232,6 +233,15 @@ Backend configuration lives in `src/presentation/appsettings.json`:
     "BaseUrl": "http://localhost:11434",
     "Model": "gemma4:e4b",
     "Temperature": 0.2
+  },
+  "Analysis": {
+    "Roles": [
+      "Digital Forensic Analyst",
+      "Computer Vision Specialist",
+      "UX/UI Designer",
+      "Radiologist / Medical Imaging Technician",
+      "Art Critic or Curator"
+    ]
   }
 }
 ```
@@ -243,6 +253,10 @@ Override via environment variables (ASP.NET Core convention):
 Ollama__BaseUrl=http://my-ollama-host:11434
 Ollama__Model=gemma4:e4b
 Ollama__Temperature=0.2
+
+# Analysis roles (array index based)
+Analysis__Roles__0=Digital Forensic Analyst
+Analysis__Roles__1=Computer Vision Specialist
 ```
 
 ---
@@ -258,6 +272,9 @@ Analyzes an uploaded image.
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `file` | File | Yes | JPEG, PNG, WebP, or GIF. Max 10 MB. |
+| `model` | string | No | Optional Ollama model override. |
+| `language` | string | No | Defaults to `English` if omitted. |
+| `role` | string | Yes | Must match one configured role from `Analysis:Roles`. |
 
 **Response `200 OK`**
 
@@ -268,6 +285,8 @@ Analyzes an uploaded image.
   "summary": "A scenic mountain landscape at sunset...",
   "insights": ["Strong warm color palette", "Golden hour lighting"],
   "tags": ["landscape", "mountains", "sunset", "nature"],
+  "language": "English",
+  "role": "Art Critic or Curator",
   "analyzedAt": "2026-04-20T12:00:00Z"
 }
 ```
@@ -293,6 +312,22 @@ Returns the list of installed **vision-capable** Ollama models used by the UI dr
 ```
 
 If no vision-capable models are installed, the endpoint returns an empty array.
+
+### `GET /api/imageanalysis/roles`
+
+Returns the configured role list used by the role dropdown in the upload screen.
+
+**Response `200 OK`**
+
+```json
+[
+  "Digital Forensic Analyst",
+  "Computer Vision Specialist",
+  "UX/UI Designer",
+  "Radiologist / Medical Imaging Technician",
+  "Art Critic or Curator"
+]
+```
 
 ---
 

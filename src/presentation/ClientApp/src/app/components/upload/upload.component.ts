@@ -19,6 +19,7 @@ export class UploadComponent implements OnInit {
   readonly errorMessage = this.analysisService.errorMessage;
   readonly availableModels = this.analysisService.availableModels;
   readonly selectedModel = this.analysisService.selectedModel;
+  readonly availableRoles = this.analysisService.availableRoles;
   readonly isLoadingModels = this.analysisService.isLoadingModels;
   readonly isLoading = this.analysisService.isLoading;
   readonly hasResult = this.analysisService.hasResult;
@@ -31,9 +32,11 @@ export class UploadComponent implements OnInit {
   selectedFile = signal<File | null>(null);
   previewUrl = signal<string | null>(null);
   selectedLanguage = signal('English');
+  selectedRole = signal('');
 
   ngOnInit(): void {
     this.analysisService.loadAvailableModels();
+    this.analysisService.loadAvailableRoles();
   }
 
   onDragOver(event: DragEvent): void {
@@ -80,11 +83,16 @@ export class UploadComponent implements OnInit {
     this.selectedLanguage.set(select.value ?? 'English');
   }
 
+  onRoleSelected(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.selectedRole.set(select.value ?? '');
+  }
+
   analyzeImage(): void {
     const file = this.selectedFile();
-    if (!file || !this.selectedModel()) return;
+    if (!file || !this.selectedModel() || !this.selectedRole()) return;
 
-    this.analysisService.analyzeImage(file, this.selectedModel(), this.selectedLanguage());
+    this.analysisService.analyzeImage(file, this.selectedModel(), this.selectedLanguage(), this.selectedRole());
   }
 
   formatFileSize(bytes: number): string {

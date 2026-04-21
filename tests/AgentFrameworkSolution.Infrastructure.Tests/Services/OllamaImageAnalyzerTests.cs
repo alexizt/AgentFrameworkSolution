@@ -36,7 +36,12 @@ public sealed class OllamaImageAnalyzerTests
             ["Ollama:Temperature"] = "0.7"
         });
 
-        var result = await sut.AnalyzeAsync([1, 2, 3], "image/png", model: null, language: SupportedLanguage.Spanish);
+        var result = await sut.AnalyzeAsync(
+            [1, 2, 3],
+            "image/png",
+            model: null,
+            language: SupportedLanguage.Spanish,
+            role: "Digital Forensic Analyst");
 
         Assert.Equal("A summary", result.Summary);
         Assert.Equal(SupportedLanguage.Spanish, result.Language);
@@ -48,6 +53,8 @@ public sealed class OllamaImageAnalyzerTests
         var payload = JsonDocument.Parse(request.Body ?? "{}");
         Assert.Equal("vision-default", payload.RootElement.GetProperty("model").GetString());
         Assert.Equal(0.7, payload.RootElement.GetProperty("options").GetProperty("temperature").GetDouble(), 3);
+        var prompt = payload.RootElement.GetProperty("messages")[0].GetProperty("content").GetString();
+        Assert.Contains("You are acting as a Digital Forensic Analyst.", prompt);
     }
 
     [Fact]

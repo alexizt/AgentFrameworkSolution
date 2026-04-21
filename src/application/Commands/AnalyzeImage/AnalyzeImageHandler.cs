@@ -32,13 +32,18 @@ public sealed class AnalyzeImageHandler : IRequestHandler<AnalyzeImageCommand, I
         if (!SupportedContentTypes.Contains(request.ContentType))
             throw new UnsupportedImageFormatError(request.ContentType);
 
+        if (string.IsNullOrWhiteSpace(request.Role))
+            throw new AnalysisFailedError("The selected analysis role is required.");
+
         var language = request.Language ?? SupportedLanguage.English;
+        var role = request.Role.Trim();
 
         var result = await _imageAnalyzer.AnalyzeAsync(
             request.ImageData,
             request.ContentType,
             request.Model,
             language,
+            role,
             cancellationToken);
 
         if (string.IsNullOrWhiteSpace(result.Summary))
@@ -51,6 +56,7 @@ public sealed class AnalyzeImageHandler : IRequestHandler<AnalyzeImageCommand, I
             Insights: result.Insights,
             Tags: result.Tags,
             Language: language.ToString(),
+            Role: role,
             AnalyzedAt: DateTime.UtcNow);
     }
 }
