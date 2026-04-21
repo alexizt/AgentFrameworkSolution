@@ -18,6 +18,7 @@ export class ImageAnalysisService {
   private readonly selectedModelSignal = signal('');
   private readonly isLoadingModelsSignal = signal(true);
   private readonly availableRolesSignal = signal<string[]>([]);
+  private readonly isLoadingRolesSignal = signal(true);
 
   readonly state = this.stateSignal.asReadonly();
   readonly result = this.resultSignal.asReadonly();
@@ -26,6 +27,8 @@ export class ImageAnalysisService {
   readonly selectedModel = this.selectedModelSignal.asReadonly();
   readonly isLoadingModels = this.isLoadingModelsSignal.asReadonly();
   readonly availableRoles = this.availableRolesSignal.asReadonly();
+  readonly isLoadingRoles = this.isLoadingRolesSignal.asReadonly();
+  readonly isLoadingDropdowns = computed(() => this.isLoadingModels() || this.isLoadingRoles());
   readonly isLoading = computed(() => this.state() === 'loading');
   readonly hasResult = computed(() => this.state() === 'success');
   readonly hasError = computed(() => this.state() === 'error');
@@ -57,14 +60,18 @@ export class ImageAnalysisService {
   }
 
   loadAvailableRoles(): void {
+    this.isLoadingRolesSignal.set(true);
+
     this.getWithRetry('/api/imageanalysis/roles')
       .subscribe({
         next: (roles) => {
           const uniqueRoles = this.getUniqueNonEmptyValues(roles);
           this.availableRolesSignal.set(uniqueRoles);
+          this.isLoadingRolesSignal.set(false);
         },
         error: () => {
           this.availableRolesSignal.set([]);
+          this.isLoadingRolesSignal.set(false);
         }
       });
   }

@@ -21,6 +21,8 @@ export class UploadComponent implements OnInit {
   readonly selectedModel = this.analysisService.selectedModel;
   readonly availableRoles = this.analysisService.availableRoles;
   readonly isLoadingModels = this.analysisService.isLoadingModels;
+  readonly isLoadingRoles = this.analysisService.isLoadingRoles;
+  readonly isLoadingDropdowns = this.analysisService.isLoadingDropdowns;
   readonly isLoading = this.analysisService.isLoading;
   readonly hasResult = this.analysisService.hasResult;
   readonly hasError = this.analysisService.hasError;

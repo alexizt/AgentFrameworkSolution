@@ -27,3 +27,18 @@
 .analyze-btn:not(:disabled):hover {
   box-shadow: 0 4px 20px rgba(99, 102, 241, 0.45);
 }
+
+.dropdown-loader {
+  animation: fadeInUp 0.25s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

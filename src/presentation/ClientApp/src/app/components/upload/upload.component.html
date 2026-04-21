@@ -27,6 +27,16 @@
     <!-- Upload Card -->
     <div class="glass-card rounded-2xl p-6 mb-6">
 
+      @if (isLoadingDropdowns()) {
+        <div class="dropdown-loader mb-5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300">
+          <svg class="h-3.5 w-3.5 animate-spin text-indigo-300" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <span>Loading...</span>
+        </div>
+      }
+
       <div class="mb-5">
         <label for="modelSelect" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">Model</label>
         <div class="relative">
@@ -73,12 +83,16 @@
           <select
             id="roleSelect"
             class="w-full appearance-none rounded-xl border border-white/10 bg-slate-900/80 px-4 py-2.5 pr-10 text-sm text-white outline-none transition-colors focus:border-indigo-400/70"
-            [disabled]="isLoading()"
+            [disabled]="isLoading() || isLoadingRoles()"
             [value]="selectedRole()"
             (change)="onRoleSelected($event)">
-            <option value="" disabled>Select a role</option>
-            @for (role of availableRoles(); track role) {
-              <option [value]="role">{{ role }}</option>
+            @if (isLoadingRoles()) {
+              <option value="" disabled>Loading roles...</option>
+            } @else {
+              <option value="" disabled>Select a role</option>
+              @for (role of availableRoles(); track role) {
+                <option [value]="role">{{ role }}</option>
+              }
             }
           </select>
           <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400" aria-hidden="true">▾</span>
