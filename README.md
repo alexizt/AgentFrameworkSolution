@@ -113,6 +113,7 @@ The published output includes the compiled API. In production mode, `Program.cs`
 ## Testing
 
 Unit tests are implemented using **xUnit** and **Moq** for isolated component testing.
+The solution includes all four test projects, including presentation tests, so IDE and solution-based test discovery can enumerate the full test suite.
 
 ### Run all tests
 

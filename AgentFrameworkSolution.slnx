@@ -22,4 +22,7 @@
   <Folder Name="/tests/AgentFrameworkSolution.Application.Tests/">
     <Project Path="tests/AgentFrameworkSolution.Application.Tests/AgentFrameworkSolution.Application.Tests.csproj" />
   </Folder>
+  <Folder Name="/tests/AgentFrameworkSolution.Presentation.Tests/">
+    <Project Path="tests/AgentFrameworkSolution.Presentation.Tests/AgentFrameworkSolution.Presentation.Tests.csproj" />
+  </Folder>
 </Solution>
