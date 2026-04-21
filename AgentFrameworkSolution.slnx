@@ -16,4 +16,7 @@
   <Folder Name="/tests/AgentFrameworkSolution.Infrastructure.Tests/">
     <Project Path="tests/AgentFrameworkSolution.Infrastructure.Tests/AgentFrameworkSolution.Infrastructure.Tests.csproj" />
   </Folder>
+  <Folder Name="/tests/AgentFrameworkSolution.Application.Tests/">
+    <Project Path="tests/AgentFrameworkSolution.Application.Tests/AgentFrameworkSolution.Application.Tests.csproj" />
+  </Folder>
 </Solution>

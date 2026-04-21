@@ -135,12 +135,17 @@ dotnet test tests/AgentFrameworkSolution.Presentation.Tests
 dotnet test tests/AgentFrameworkSolution.Infrastructure.Tests
 ```
 
+```bash
+dotnet test tests/AgentFrameworkSolution.Application.Tests
+```
+
 ### Test Coverage
 
 | Test Suite | Location | Tests | Coverage |
 |-----------|----------|-------|----------|
 | **Presentation Tests** | `tests/AgentFrameworkSolution.Presentation.Tests/` | 9 | Global exception handling middleware |
 | **Infrastructure Tests** | `tests/AgentFrameworkSolution.Infrastructure.Tests/` | 9 | Ollama adapter behavior + DI wiring |
+| **Application Tests** | `tests/AgentFrameworkSolution.Application.Tests/` | 6 | AnalyzeImage command handler validation + mapping |
 
 #### GlobalExceptionHandlingMiddlewareTests (9 tests)
 
@@ -174,6 +179,22 @@ Verifies infrastructure adapter behavior and registration:
 
 ```bash
 dotnet test tests/AgentFrameworkSolution.Infrastructure.Tests --logger "console;verbosity=normal"
+```
+
+#### AnalyzeImageHandlerTests (6 tests)
+
+Verifies application-layer command handler behavior:
+
+- Input validation (empty data, oversized payload, unsupported format)
+- Language defaulting to English when omitted
+- Dependency orchestration to `IImageAnalyzer`
+- Failure behavior when analyzer returns empty summary
+- DTO mapping output on successful analysis
+
+**Run application tests:**
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Application.Tests --logger "console;verbosity=normal"
 ```
 
 ---
