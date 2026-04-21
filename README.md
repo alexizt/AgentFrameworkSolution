@@ -86,6 +86,20 @@ Open **`http://localhost:4200`** in your browser.
 The model dropdown in the upload screen lists only **vision-capable** Ollama models discovered from your local Ollama instance.
 The role dropdown is loaded from backend configuration and is required before running analysis.
 
+### API Error Response Shape
+
+All API errors now use a consistent JSON object shape:
+
+```json
+{
+  "error": "Human-readable message",
+  "code": "STABLE_ERROR_CODE",
+  "traceId": null
+}
+```
+
+This includes both global exception middleware responses and explicit 400 validation failures from `POST /api/imageanalysis`.
+
 ---
 
 ## Building for Production
@@ -150,7 +164,7 @@ dotnet test tests/AgentFrameworkSolution.Application.Tests
 | Test Suite | Location | Tests | Coverage |
 |-----------|----------|-------|----------|
 | **Domain Tests** | `tests/AgentFrameworkSolution.Domain.Tests/` | 13 | SupportedLanguage enum helpers, ImageAnalysisResult defaults/value semantics, domain error construction |
-| **Presentation Tests** | `tests/AgentFrameworkSolution.Presentation.Tests/` | 9 | Global exception handling middleware |
+| **Presentation Tests** | `tests/AgentFrameworkSolution.Presentation.Tests/` | 17 | Global exception handling middleware + ImageAnalysis controller validation responses |
 | **Infrastructure Tests** | `tests/AgentFrameworkSolution.Infrastructure.Tests/` | 9 | Ollama adapter behavior + DI wiring |
 | **Application Tests** | `tests/AgentFrameworkSolution.Application.Tests/` | 6 | AnalyzeImage command handler validation + mapping |
 
@@ -188,6 +202,15 @@ Verifies centralized error handling, logging, and response sanitization:
 ```bash
 dotnet test tests/AgentFrameworkSolution.Presentation.Tests --logger "console;verbosity=normal"
 ```
+
+#### ImageAnalysisControllerTests (8 tests)
+
+Verifies controller behavior and validation contracts:
+
+- ✅ Roles endpoint returns configured roles
+- ✅ Role normalization preserves configured canonical role on success
+- ✅ Validation failures return 400 with standardized `ErrorResponse` shape (`error`, `code`, `traceId`)
+- ✅ Validation error codes are stable for file-required, file-too-large, unsupported-format, invalid-language, role-required, and invalid-role paths
 
 #### OllamaImageAnalyzerTests (9 tests)
 

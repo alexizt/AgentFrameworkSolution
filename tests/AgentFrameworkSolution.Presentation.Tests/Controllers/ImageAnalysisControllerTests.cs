@@ -2,6 +2,7 @@ using AgentFrameworkSolution.Application.Commands.AnalyzeImage;
 using AgentFrameworkSolution.Application.DTOs;
 using AgentFrameworkSolution.Application.Interfaces;
 using AgentFrameworkSolution.Presentation.Controllers;
+using AgentFrameworkSolution.Presentation.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -43,8 +44,80 @@ public sealed class ImageAnalysisControllerTests
 
         var result = await sut.Analyze(file, "gemma4:e4b", "English", null, CancellationToken.None);
 
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.NotNull(badRequest.Value);
+        AssertBadRequestError(result, "Role is required.", "ROLE_REQUIRED");
+    }
+
+    [Fact]
+    public async Task Analyze_WhenNoFileProvided_ReturnsBadRequestWithStandardErrorResponse()
+    {
+        var sut = CreateController(
+            roles: ["Digital Forensic Analyst"],
+            out _,
+            out _);
+
+        var result = await sut.Analyze(null, "gemma4:e4b", "English", "Digital Forensic Analyst", CancellationToken.None);
+
+        AssertBadRequestError(result, "No file was provided.", "FILE_REQUIRED");
+    }
+
+    [Fact]
+    public async Task Analyze_WhenFileTooLarge_ReturnsBadRequestWithStandardErrorResponse()
+    {
+        var sut = CreateController(
+            roles: ["Digital Forensic Analyst"],
+            out _,
+            out _);
+
+        var file = CreateFormFile(length: 10L * 1024 * 1024 + 1);
+
+        var result = await sut.Analyze(file, "gemma4:e4b", "English", "Digital Forensic Analyst", CancellationToken.None);
+
+        AssertBadRequestError(result, "File size exceeds the 10 MB limit.", "IMAGE_TOO_LARGE");
+    }
+
+    [Fact]
+    public async Task Analyze_WhenContentTypeUnsupported_ReturnsBadRequestWithStandardErrorResponse()
+    {
+        var sut = CreateController(
+            roles: ["Digital Forensic Analyst"],
+            out _,
+            out _);
+
+        var file = CreateFormFile(contentType: "text/plain");
+
+        var result = await sut.Analyze(file, "gemma4:e4b", "English", "Digital Forensic Analyst", CancellationToken.None);
+
+        AssertBadRequestError(result, "'text/plain' is not supported. Use JPEG, PNG, WEBP, or GIF.", "UNSUPPORTED_FORMAT");
+    }
+
+    [Fact]
+    public async Task Analyze_WhenLanguageInvalid_ReturnsBadRequestWithStandardErrorResponse()
+    {
+        var sut = CreateController(
+            roles: ["Digital Forensic Analyst"],
+            out _,
+            out _);
+
+        var file = CreateFormFile();
+
+        var result = await sut.Analyze(file, "gemma4:e4b", "Klingon", "Digital Forensic Analyst", CancellationToken.None);
+
+        AssertBadRequestError(result, "Invalid language. Supported languages: English, Spanish, Italian, French, German.", "INVALID_LANGUAGE");
+    }
+
+    [Fact]
+    public async Task Analyze_WhenRoleNotInAllowList_ReturnsBadRequestWithStandardErrorResponse()
+    {
+        var sut = CreateController(
+            roles: ["Digital Forensic Analyst"],
+            out _,
+            out _);
+
+        var file = CreateFormFile();
+
+        var result = await sut.Analyze(file, "gemma4:e4b", "English", "Nurse", CancellationToken.None);
+
+        AssertBadRequestError(result, "Invalid role. Select a role from the configured list.", "INVALID_ROLE");
     }
 
     [Fact]
@@ -107,13 +180,27 @@ public sealed class ImageAnalysisControllerTests
 
     private static IFormFile CreateFormFile()
     {
+        return CreateFormFile("image/png", 4);
+    }
+
+    private static IFormFile CreateFormFile(string contentType = "image/png", long length = 4)
+    {
         var bytes = new byte[] { 1, 2, 3, 4 };
         var stream = new MemoryStream(bytes);
 
-        return new FormFile(stream, 0, bytes.Length, "file", "photo.png")
+        return new FormFile(stream, 0, length, "file", "photo.png")
         {
             Headers = new HeaderDictionary(),
-            ContentType = "image/png"
+            ContentType = contentType
         };
+    }
+
+    private static void AssertBadRequestError(IActionResult result, string expectedError, string expectedCode)
+    {
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        var payload = Assert.IsType<ErrorResponse>(badRequest.Value);
+        Assert.Equal(expectedError, payload.Error);
+        Assert.Equal(expectedCode, payload.Code);
+        Assert.Null(payload.TraceId);
     }
 }

@@ -3,6 +3,7 @@ using AgentFrameworkSolution.Application.Errors;
 using AgentFrameworkSolution.Application.Interfaces;
 using AgentFrameworkSolution.Domain.Errors;
 using AgentFrameworkSolution.Domain.ValueObjects;
+using AgentFrameworkSolution.Presentation.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -68,26 +69,26 @@ public sealed class ImageAnalysisController : ControllerBase
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
-            return BadRequest(new { error = "No file was provided." });
+            return ValidationBadRequest("No file was provided.", "FILE_REQUIRED");
 
         if (file.Length > MaxFileSizeBytes)
-            return BadRequest(new { error = "File size exceeds the 10 MB limit." });
+            return ValidationBadRequest("File size exceeds the 10 MB limit.", "IMAGE_TOO_LARGE");
 
         if (!AllowedContentTypes.Contains(file.ContentType))
-            return BadRequest(new { error = $"'{file.ContentType}' is not supported. Use JPEG, PNG, WEBP, or GIF." });
+            return ValidationBadRequest($"'{file.ContentType}' is not supported. Use JPEG, PNG, WEBP, or GIF.", "UNSUPPORTED_FORMAT");
 
         if (!SupportedLanguageExtensions.TryParse(language, out var parsedLanguage))
-            return BadRequest(new { error = "Invalid language. Supported languages: English, Spanish, Italian, French, German." });
+            return ValidationBadRequest("Invalid language. Supported languages: English, Spanish, Italian, French, German.", "INVALID_LANGUAGE");
 
         if (string.IsNullOrWhiteSpace(role))
-            return BadRequest(new { error = "Role is required." });
+            return ValidationBadRequest("Role is required.", "ROLE_REQUIRED");
 
         var normalizedRole = role.Trim();
         var matchedRole = _allowedRoles.FirstOrDefault(x =>
             string.Equals(x, normalizedRole, StringComparison.OrdinalIgnoreCase));
 
         if (string.IsNullOrWhiteSpace(matchedRole))
-            return BadRequest(new { error = "Invalid role. Select a role from the configured list." });
+            return ValidationBadRequest("Invalid role. Select a role from the configured list.", "INVALID_ROLE");
 
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream, cancellationToken);
@@ -102,5 +103,13 @@ public sealed class ImageAnalysisController : ControllerBase
 
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
+    }
+
+    private BadRequestObjectResult ValidationBadRequest(string error, string code)
+    {
+        return BadRequest(new ErrorResponse(
+            Error: error,
+            Code: code,
+            TraceId: null));
     }
 }
