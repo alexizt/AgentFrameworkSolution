@@ -109,6 +109,53 @@ The published output includes the compiled API. In production mode, `Program.cs`
 
 ---
 
+## Testing
+
+Unit tests are implemented using **xUnit** and **Moq** for isolated component testing.
+
+### Run all tests
+
+```bash
+dotnet test
+```
+
+### Run tests with verbose output
+
+```bash
+dotnet test --logger "console;verbosity=detailed"
+```
+
+### Run tests for a specific project
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Presentation.Tests
+```
+
+### Test Coverage
+
+| Test Suite | Location | Tests | Coverage |
+|-----------|----------|-------|----------|
+| **Presentation Tests** | `tests/AgentFrameworkSolution.Presentation.Tests/` | 9 | Global exception handling middleware |
+
+#### GlobalExceptionHandlingMiddlewareTests (9 tests)
+
+Verifies centralized error handling, logging, and response sanitization:
+
+- ✅ Domain errors return 400 Bad Request
+- ✅ Application errors return 500 Internal Server Error
+- ✅ Generic exceptions are sanitized (production) vs. detailed (development)
+- ✅ Stack traces are logged internally but never exposed to clients
+- ✅ Responses are valid JSON with consistent error format
+- ✅ Logging occurs at appropriate levels (Warning/Error)
+
+**Run presentation tests:**
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Presentation.Tests --logger "console;verbosity=normal"
+```
+
+---
+
 ## Configuration
 
 Backend configuration lives in `src/presentation/appsettings.json`:
