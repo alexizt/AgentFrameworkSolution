@@ -19,6 +19,7 @@
 ## Documentation Practice
 - When project docs are added, link to them instead of duplicating their content.
 - Keep this file concise and update it when stable conventions appear.
+- After adding or modifying any feature or test, update README.md with relevant usage, setup, and test instructions.
 
 ## Update Triggers
 - Update this file when any of the following are added:
