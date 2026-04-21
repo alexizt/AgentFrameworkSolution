@@ -12,4 +12,8 @@
   <Folder Name="/src/presentation/">
     <Project Path="src/presentation/AgentFrameworkSolution.Presentation.csproj" />
   </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/AgentFrameworkSolution.Infrastructure.Tests/">
+    <Project Path="tests/AgentFrameworkSolution.Infrastructure.Tests/AgentFrameworkSolution.Infrastructure.Tests.csproj" />
+  </Folder>
 </Solution>

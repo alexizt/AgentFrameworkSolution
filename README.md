@@ -131,11 +131,16 @@ dotnet test --logger "console;verbosity=detailed"
 dotnet test tests/AgentFrameworkSolution.Presentation.Tests
 ```
 
+```bash
+dotnet test tests/AgentFrameworkSolution.Infrastructure.Tests
+```
+
 ### Test Coverage
 
 | Test Suite | Location | Tests | Coverage |
 |-----------|----------|-------|----------|
 | **Presentation Tests** | `tests/AgentFrameworkSolution.Presentation.Tests/` | 9 | Global exception handling middleware |
+| **Infrastructure Tests** | `tests/AgentFrameworkSolution.Infrastructure.Tests/` | 9 | Ollama adapter behavior + DI wiring |
 
 #### GlobalExceptionHandlingMiddlewareTests (9 tests)
 
@@ -152,6 +157,23 @@ Verifies centralized error handling, logging, and response sanitization:
 
 ```bash
 dotnet test tests/AgentFrameworkSolution.Presentation.Tests --logger "console;verbosity=normal"
+```
+
+#### OllamaImageAnalyzerTests (9 tests)
+
+Verifies infrastructure adapter behavior and registration:
+
+- Configured/default model and temperature usage
+- Model override behavior
+- Error handling for non-success responses and empty payloads
+- JSON parsing fallback behavior
+- Vision model detection and sorting via `/api/tags` and `/api/show`
+- DI registration (`IImageAnalyzer`) with configured/default base URL and timeout
+
+**Run infrastructure tests:**
+
+```bash
+dotnet test tests/AgentFrameworkSolution.Infrastructure.Tests --logger "console;verbosity=normal"
 ```
 
 ---
