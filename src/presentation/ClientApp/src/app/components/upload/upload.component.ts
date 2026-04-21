@@ -92,7 +92,7 @@ export class UploadComponent implements OnInit {
     const file = this.selectedFile();
     if (!file || !this.selectedModel() || !this.selectedRole()) return;
 
-    this.analysisService.analyzeImage(file, this.selectedModel(), this.selectedLanguage(), this.selectedRole());
+    this.analysisService.analyzeImage(file, this.selectedModel(), this.selectedRole(), this.selectedLanguage());
   }
 
   formatFileSize(bytes: number): string {

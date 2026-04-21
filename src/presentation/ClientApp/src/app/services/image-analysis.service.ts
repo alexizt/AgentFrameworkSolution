@@ -93,7 +93,7 @@ export class ImageAnalysisService {
     }
   }
 
-  analyzeImage(file: File, model: string, language: string = 'English', role: string): void {
+  analyzeImage(file: File, model: string, role: string, language: string = 'English'): void {
     this.stateSignal.set('loading');
     this.errorMessageSignal.set(null);
     this.resultSignal.set(null);
