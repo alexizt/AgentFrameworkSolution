@@ -30,7 +30,7 @@
   cursor: zoom-in;
   position: relative;
   transform: translateZ(0) scale(1);
-  transform-origin: center center;
+  transform-origin: left center;
   transition:
     transform 0.28s ease,
     box-shadow 0.28s ease,
@@ -45,6 +45,12 @@
   box-shadow:
     0 20px 40px rgba(15, 23, 42, 0.55),
     0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 500px) {
+  .preview-image:hover {
+    transform: translateY(-6px) scale(2);
+  }
 }
 
 .analyze-btn {
